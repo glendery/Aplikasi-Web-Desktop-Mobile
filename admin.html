@@ -1025,15 +1025,8 @@
     });
 
     
-    window.deleteService = function(idx) {
-      if(!confirm('Hapus layanan ini? Bot tidak akan bisa menjawab topik ini lagi.')) return;
-      const data = getServices();
-      const deleted = data.splice(idx, 1);
-      saveServices(data);
-      window.AdminAuth.logActivity('DELETE_SERVICE', `Menghapus layanan: ${deleted[0]?.title}`);
-      renderServices();
-      renderAudit();
-    };
+    // Removed duplicate deleteService function to fix conflict
+
 
     svcForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1447,7 +1440,7 @@
             <button onclick="moveGalleryItem('${it.id}', -1)" class="option-btn">▲</button>
             <button onclick="moveGalleryItem('${it.id}', 1)" class="option-btn">▼</button>
             <button onclick="editGallery('${it.id}')" style="color:var(--toska-main);border:none;background:none;cursor:pointer;font-weight:600">Edit</button>
-            <button onclick="deleteGallery(${it._idx})" style="color:red;border:none;background:none;cursor:pointer;font-weight:600">Hapus</button>
+            <button onclick="deleteGallery('${it.id}')" style="color:red;border:none;background:none;cursor:pointer;font-weight:600">Hapus</button>
           </div>
         </div>
       `).join('') || '<div style="padding:20px;text-align:center">Belum ada foto. Tambahkan melalui tombol di atas.</div>';
