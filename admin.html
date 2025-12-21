@@ -919,7 +919,21 @@
 
     async function renderServices() {
       const rowsEl = document.getElementById('serviceRows');
-      const data = await getServices();
+      let data = [];
+      try { data = await getServices(); } catch(e){}
+      
+      // Check if empty (likely due to fresh Cloud DB)
+      if (data.length === 0 && typeof defaultServices !== 'undefined') {
+          rowsEl.innerHTML = `
+             <div style="padding:20px;text-align:center;grid-column:1/-1">
+                <p>Belum ada data layanan (Cloud masih baru).</p>
+                <button onclick="resetServices()" class="btn-primary" style="background:#007bff;color:white;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;">↻ Pulihkan Data Default</button>
+             </div>
+          `;
+          document.getElementById('statServices').textContent = '0';
+          return;
+      }
+
       const filter = document.getElementById('fltService').value.toLowerCase();
       
       const filtered = data.filter((item) => {

@@ -85,32 +85,46 @@ class BedasDBService {
 
   async getAll(collectionKey) {
     if (this.useFirebase && !this.firebaseDisabled) {
-      try {
-        const snapshot = await this.db.collection(this.collectionNames[collectionKey]).get();
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Update LocalStorage cache for offline fallback
         try {
-             localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(data));
-        } catch(err) { console.warn('Cache update failed', err); }
-        return data;
-      } catch (e) {
-        console.error('DB Read Error (Firebase), falling back to LocalStorage:', e);
-        this._handleFirebaseError(e); // Check critical
-        // Fallback to LocalStorage
-        try {
-            const key = this.collectionNames[collectionKey];
-            return JSON.parse(localStorage.getItem(key) || '[]');
-        } catch (err) { return []; }
-      }
-    } else {
-      // LocalStorage
-      try {
-        const key = this.collectionNames[collectionKey];
-        return JSON.parse(localStorage.getItem(key) || '[]');
-      } catch (e) {
-        return [];
-      }
-    }
+            const snapshot = await this.db.collection(this.collectionNames[collectionKey]).get();
+            let items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // SMART SYNC: If Cloud is empty but Local has data, SEED Cloud from Local
+            if (items.length === 0) {
+                try {
+                    const localRaw = localStorage.getItem(this.collectionNames[collectionKey]);
+                    const localData = localRaw ? JSON.parse(localRaw) : [];
+                    if (localData.length > 0) {
+                        console.log(`[BedasDB] Seeding Cloud from Local for ${collectionKey}`);
+                        // Don't await this to speed up UI, but trigger the save
+                        this.setAll(collectionKey, localData).catch(e => console.error(e));
+                        return localData; 
+                    }
+                } catch(err) { console.error(err); }
+            }
+
+            // Normal Sync: Cloud is source of truth (if not empty)
+            if (items.length > 0) {
+                localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(items));
+            }
+            
+            return items;
+        } catch(e) {
+            console.error('DB Read Error (Firebase), falling back to LocalStorage:', e);
+            this._handleFirebaseError(e);
+            // Fallback to local storage
+            try {
+                const localData = localStorage.getItem(this.collectionNames[collectionKey]);
+                return localData ? JSON.parse(localData) : [];
+            } catch(err) { return []; }
+        }
+    } 
+    
+    // LocalStorage Logic
+    try {
+        const localData = localStorage.getItem(this.collectionNames[collectionKey]);
+        return localData ? JSON.parse(localData) : [];
+    } catch(e) { return []; }
   }
 
   async add(collectionKey, data) {
