@@ -6,6 +6,7 @@
 class BedasDBService {
   constructor() {
     this.useFirebase = false;
+    this.firebaseDisabled = false; // Kill switch if critical error
     this.db = null;
     this.collectionNames = {
       submissions: 'bedas_submissions',
@@ -23,6 +24,17 @@ class BedasDBService {
     };
   }
 
+  // Handle critical errors (like project not found)
+  _handleFirebaseError(e) {
+      if(e && e.code === 'not-found' || (e.message && e.message.includes('database (default) does not exist'))) {
+          console.warn('BedasDB: Critical Firebase Error. Switching to Offline Mode permanently for this session.');
+          this.useFirebase = false;
+          this.firebaseDisabled = true;
+          return true; // Handled
+      }
+      return false; // Not critical
+  }
+
   async init() {
     // Cek apakah firebaseConfig tersedia dan valid
     if (typeof firebaseConfig !== 'undefined' && firebaseConfig.apiKey) {
@@ -33,6 +45,18 @@ class BedasDBService {
             firebase.initializeApp(firebaseConfig);
           }
           this.db = firebase.firestore();
+          
+          // Test Connection immediately to catch 'not-found' error early
+          try {
+             // Try to access a non-existent doc just to check connection/existence
+             await this.db.collection('init_check').doc('test').get();
+          } catch(err) {
+             if(this._handleFirebaseError(err)) {
+                 console.log('BedasDB: Menggunakan LocalStorage (Offline Mode - Config Error)');
+                 return;
+             }
+          }
+
           // Initialize Analytics if available
           if (firebase.analytics) {
             firebase.analytics();
@@ -43,9 +67,12 @@ class BedasDBService {
           } catch (err) {
             console.warn('Firebase persistence disabled:', err.code);
           }
-          this.useFirebase = true;
-          console.log('BedasDB: Menggunakan Firebase (Cloud Mode)');
-          return;
+          
+          if(!this.firebaseDisabled) {
+              this.useFirebase = true;
+              console.log('BedasDB: Menggunakan Firebase (Cloud Mode)');
+              return;
+          }
         }
       } catch (e) {
         console.error('BedasDB: Gagal inisialisasi Firebase', e);
@@ -57,7 +84,7 @@ class BedasDBService {
   // --- GENERIC HELPERS ---
 
   async getAll(collectionKey) {
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         const snapshot = await this.db.collection(this.collectionNames[collectionKey]).get();
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -68,6 +95,7 @@ class BedasDBService {
         return data;
       } catch (e) {
         console.error('DB Read Error (Firebase), falling back to LocalStorage:', e);
+        this._handleFirebaseError(e); // Check critical
         // Fallback to LocalStorage
         try {
             const key = this.collectionNames[collectionKey];
@@ -91,7 +119,7 @@ class BedasDBService {
         data.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
     
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         // Gunakan ID dari data sebagai Doc ID agar konsisten
         await this.db.collection(this.collectionNames[collectionKey]).doc(data.id).set(data);
@@ -100,6 +128,7 @@ class BedasDBService {
         return data;
       } catch (e) {
         console.error('DB Write Error (Firebase), falling back to LocalStorage:', e);
+        this._handleFirebaseError(e);
         // Fallback execution continues below
       }
     } 
@@ -109,7 +138,7 @@ class BedasDBService {
   }
 
   async update(collectionKey, id, newData) {
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         await this.db.collection(this.collectionNames[collectionKey]).doc(id).update(newData);
         // Sync local
@@ -118,6 +147,7 @@ class BedasDBService {
         return;
       } catch(e) {
          console.error('DB Update Error (Firebase), falling back to LocalStorage:', e);
+         this._handleFirebaseError(e);
       }
     }
     
@@ -131,13 +161,14 @@ class BedasDBService {
   }
 
   async delete(collectionKey, id) {
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         await this.db.collection(this.collectionNames[collectionKey]).doc(id).delete();
         this._updateLocal(collectionKey, { id }, 'delete');
         return;
       } catch(e) {
         console.error('DB Delete Error (Firebase), falling back to LocalStorage:', e);
+        this._handleFirebaseError(e);
       }
     }
     
@@ -172,7 +203,7 @@ class BedasDBService {
   }
 
   async setAll(collectionKey, dataArray) {
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
         // Sync logic: Delete items not in dataArray, Update/Add items in dataArray.
         try {
             const collectionRef = this.db.collection(this.collectionNames[collectionKey]);
@@ -205,6 +236,7 @@ class BedasDBService {
             return;
         } catch(e) {
             console.error('BedasDB: Sync Error (Firebase), falling back to LocalStorage:', e);
+            this._handleFirebaseError(e);
             // Fallback to LocalStorage
         }
     } 
@@ -214,7 +246,7 @@ class BedasDBService {
   }
 
   async deleteAll(collectionKey) {
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
         try {
             const collectionRef = this.db.collection(this.collectionNames[collectionKey]);
             const snapshot = await collectionRef.get();
@@ -225,6 +257,7 @@ class BedasDBService {
             return;
         } catch(e) {
             console.error('BedasDB: DeleteAll Error (Firebase), falling back to LocalStorage:', e);
+            this._handleFirebaseError(e);
         }
     } 
     
@@ -261,12 +294,15 @@ class BedasDBService {
 
   async getGalleryCfg() {
     const defaultCfg = {interval_ms:2500, animation_ms:500, priority_order:['Camat','Wakil Camat']};
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         const doc = await this.db.collection(this.collectionNames.gallery_cfg).doc('main').get();
         if (doc.exists) return doc.data();
         return defaultCfg;
-      } catch(e) { return defaultCfg; }
+      } catch(e) {
+         this._handleFirebaseError(e);
+         return defaultCfg;
+      }
     } else {
       try {
         const d = localStorage.getItem(this.collectionNames.gallery_cfg);
@@ -277,13 +313,14 @@ class BedasDBService {
   }
 
   async saveGalleryCfg(data) {
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         await this.db.collection(this.collectionNames.gallery_cfg).doc('main').set(data);
         localStorage.setItem(this.collectionNames.gallery_cfg, JSON.stringify(data));
         return;
       } catch(e) {
         console.error('Save Gallery Cfg Error (Firebase), fallback to Local:', e);
+        this._handleFirebaseError(e);
       }
     }
     
@@ -293,7 +330,7 @@ class BedasDBService {
 
   async getPositions() {
     const defaultPos = ['Camat','Wakil Camat','Sekretaris Kecamatan','Kasi Pemerintahan','Kasi Pelayanan'];
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         const doc = await this.db.collection(this.collectionNames.positions_cfg).doc('main').get();
         if (doc.exists && doc.data().items) {
@@ -304,6 +341,7 @@ class BedasDBService {
         return defaultPos;
       } catch(e) {
          // Fallback
+         this._handleFirebaseError(e);
          try {
             const d = localStorage.getItem(this.collectionNames.positions_cfg);
             if (d) return JSON.parse(d);
@@ -321,13 +359,14 @@ class BedasDBService {
   }
 
   async savePositions(list) {
-    if (this.useFirebase) {
+    if (this.useFirebase && !this.firebaseDisabled) {
       try {
         await this.db.collection(this.collectionNames.positions_cfg).doc('main').set({ items: list });
         localStorage.setItem(this.collectionNames.positions_cfg, JSON.stringify(list));
         return;
       } catch(e) {
         console.error('Save Positions Error (Firebase), fallback to Local:', e);
+        this._handleFirebaseError(e);
       }
     } 
     
@@ -337,7 +376,7 @@ class BedasDBService {
 
   async getLogs() { return this.getAll('logs'); }
   async addLog(data) {
-      if (this.useFirebase) {
+      if (this.useFirebase && !this.firebaseDisabled) {
           try {
             // Add to Firestore (auto-ID)
             await this.db.collection(this.collectionNames.logs).add(data);
@@ -350,6 +389,7 @@ class BedasDBService {
             return;
           } catch(e) {
             console.error('Add Log Error (Firebase), fallback to Local:', e);
+            this._handleFirebaseError(e);
           }
       } 
       
@@ -359,6 +399,9 @@ class BedasDBService {
       if(logs.length > 200) logs.pop(); // Limit local logs
       localStorage.setItem(this.collectionNames.logs, JSON.stringify(logs));
   }
+
+  async getPlaces() { return this.getAll('places'); }
+  async savePlaces(data) { return this.setAll('places', data); }
 
 }
 
