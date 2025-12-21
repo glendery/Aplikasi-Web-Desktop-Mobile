@@ -7,7 +7,6 @@ const ASSETS = [
   '/offline.html',
   '/styles.css',
   '/db-service.js',
-  '/firebase-config.js',
   '/data-services.js',
   '/images/ikon.png',
   '/images/logo pemkab.png',
@@ -15,10 +14,7 @@ const ASSETS = [
   '/images/camat.png',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap',
-  'https://unpkg.com/mammoth/mammoth.browser.min.js',
-  'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
-  'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js'
+  'https://unpkg.com/mammoth/mammoth.browser.min.js'
 ];
 
 // Install Service Worker

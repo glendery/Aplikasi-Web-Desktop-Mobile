@@ -9,10 +9,7 @@
   <style>
     /* Firebase & BedasDB */
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
-    <script src="firebase-config.js"></script>
+    <script src="data-services.js"></script>
     <script src="db-service.js"></script>
     <style>
     body{background: var(--gradient-soft);}
@@ -451,6 +448,40 @@
         <button class="option-btn" onclick="prevSocialPage()">‹</button>
         <span id="socialPageInfo" style="font-size:12px;color:#666">Hal 1</span>
         <button class="option-btn" onclick="nextSocialPage()">›</button>
+      </div>
+    </div>
+
+    <!-- TAB: SESSION MANAGEMENT -->
+    <div id="tab-session" class="tab-content">
+      <div class="stat-grid" style="margin-top:0">
+        <div class="stat-card">
+          <div>User Login</div>
+          <strong id="sessUser">-</strong>
+        </div>
+        <div class="stat-card">
+          <div>Role</div>
+          <strong id="sessRole">-</strong>
+        </div>
+        <div class="stat-card">
+          <div>Sesi Berakhir</div>
+          <strong id="sessExpiry">-</strong>
+        </div>
+        <div class="stat-card">
+          <div>Status</div>
+          <strong style="color:var(--toska-main)">Aktif</strong>
+        </div>
+      </div>
+
+      <div class="section-title">Riwayat Aktivitas Admin</div>
+      <div class="table" style="max-height: 60vh;">
+        <div class="table-header audit-header" style="grid-template-columns: 180px 100px 1fr 120px;">
+          <div>Waktu</div><div>User</div><div>Aktivitas</div><div>IP</div>
+        </div>
+        <div id="auditRows"></div>
+      </div>
+      
+      <div style="margin-top:20px;text-align:right">
+        <button class="option-btn btn-danger" onclick="if(confirm('Hapus semua log aktivitas?')) { localStorage.removeItem('bedas_audit_log'); renderAudit(); }">Hapus Semua Log</button>
       </div>
     </div>
 
@@ -1774,6 +1805,16 @@
         renderAudit();
         await renderStats();
         
+        // Ensure data exists (Bot Services)
+        let services = await window.BedasDB.getServices();
+        if (services.length === 0 && typeof defaultServices !== 'undefined') {
+             const seeded = defaultServices.map(s => ({
+                ...s,
+                id: s.id || (Date.now().toString(36) + Math.random().toString(36).substr(2))
+            }));
+            await window.BedasDB.saveServices(seeded);
+        }
+
         // Ensure data exists before rendering (Featured)
         let featured = await window.BedasDB.getFeatured();
         if (featured.length === 0) {
