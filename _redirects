@@ -1,10 +1,17 @@
-/ktp /chat.html?q=KTP 200
-/kk /chat.html?q=KK 200
-/akta /chat.html?q=Akta%20Kelahiran 200
-/pindah /chat.html?q=Surat%20Pindah 200
-/status /chat.html?q=Cek%20Status%20Berkas 200
-/panduan /chat.html?q=Panduan 200
-/lokasi /index.html?goto=lokasi 200
-/layanan /index.html?goto=layanan 200
-/instagram /index.html?goto=ikuti 200
-/* /index.html 200
+# Short Links (Chatbot Context)
+/ktp        /chat.html?q=KTP              301
+/kk         /chat.html?q=KK               301
+/akta       /chat.html?q=Akta%20Kelahiran 301
+/pindah     /chat.html?q=Surat%20Pindah   301
+/status     /chat.html?q=Cek%20Status     301
+/panduan    /chat.html?q=Panduan          301
+
+# Clean URLs (Pretty URLs)
+/admin      /admin.html                   200
+/peta       /peta.html                    200
+/chat       /chat.html                    200
+/login      /login.html                   200
+/offline    /offline.html                 200
+
+# SPA Fallback (Only if file not found)
+# /*          /index.html                   200
