@@ -208,15 +208,66 @@
     </div>
 
     <div class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('submissions')">Data Pengajuan</button>
-      <button class="tab-btn" onclick="switchTab('services')">Manajemen Layanan Bot</button>
-      <button class="tab-btn" onclick="switchTab('featured')">Layanan Unggulan</button>
-      <button class="tab-btn" onclick="switchTab('popular')">Layanan Populer</button>
-      <button class="tab-btn" onclick="switchTab('map-admin')">Manajemen Peta</button>
-      <button class="tab-btn" onclick="switchTab('gallery')">Manajemen Galeri Camat</button>
-      <button class="tab-btn" onclick="switchTab('komitmen')">Komitmen Pelayanan</button>
-      <button class="tab-btn" onclick="switchTab('social')">Ikuti Kami</button>
+      <button class="tab-btn active" id="btn-tab-submissions">Data Pengajuan</button>
+      <button class="tab-btn" id="btn-tab-services">Manajemen Layanan Bot</button>
+      <button class="tab-btn" id="btn-tab-featured">Layanan Unggulan</button>
+      <button class="tab-btn" id="btn-tab-popular">Layanan Populer</button>
+      <button class="tab-btn" id="btn-tab-map-admin">Manajemen Peta</button>
+      <button class="tab-btn" id="btn-tab-gallery">Manajemen Galeri Camat</button>
+      <button class="tab-btn" id="btn-tab-komitmen">Komitmen Pelayanan</button>
+      <button class="tab-btn" id="btn-tab-social">Ikuti Kami</button>
     </div>
+
+    <script>
+    // Global switchTab function must be defined early
+    window.switchTab = function(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      const content = document.getElementById('tab-' + tabId);
+      if(content) content.classList.add('active');
+      
+      // Update active button state
+      const btnMap = {
+        'submissions': 'btn-tab-submissions',
+        'services': 'btn-tab-services',
+        'featured': 'btn-tab-featured',
+        'popular': 'btn-tab-popular',
+        'map-admin': 'btn-tab-map-admin',
+        'gallery': 'btn-tab-gallery',
+        'komitmen': 'btn-tab-komitmen',
+        'social': 'btn-tab-social'
+      };
+      if(btnMap[tabId]) {
+        const btn = document.getElementById(btnMap[tabId]);
+        if(btn) btn.classList.add('active');
+      }
+      
+      // Specific render calls
+      if(tabId === 'services' && window.renderServices) window.renderServices();
+      if(tabId === 'gallery' && window.renderGallery) window.renderGallery();
+      if(tabId === 'featured' && window.renderFeatured) window.renderFeatured();
+      if(tabId === 'popular' && window.renderPopular) window.renderPopular();
+      if(tabId === 'komitmen' && window.renderKomitmen) window.renderKomitmen();
+      if(tabId === 'social' && window.renderSocial) window.renderSocial();
+    };
+
+    // Attach event listeners after DOM load
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('btn-tab-submissions').onclick = () => switchTab('submissions');
+      document.getElementById('btn-tab-services').onclick = () => switchTab('services');
+      document.getElementById('btn-tab-featured').onclick = () => switchTab('featured');
+      document.getElementById('btn-tab-popular').onclick = () => switchTab('popular');
+      document.getElementById('btn-tab-map-admin').onclick = () => switchTab('map-admin');
+      document.getElementById('btn-tab-gallery').onclick = () => switchTab('gallery');
+      document.getElementById('btn-tab-komitmen').onclick = () => switchTab('komitmen');
+      document.getElementById('btn-tab-social').onclick = () => switchTab('social');
+      
+      // Check query param for initial tab
+      const urlParams = new URLSearchParams(window.location.search);
+      const goto = urlParams.get('goto');
+      if(goto) switchTab(goto);
+    });
+    </script>
 
     <!-- TAB 1: SUBMISSIONS -->
     <div id="tab-submissions" class="tab-content active">
@@ -1408,11 +1459,14 @@
           </div>
         </div>
       `).join('') || '<div style="padding:20px;text-align:center">Belum ada foto. Tambahkan melalui tombol di atas.</div>';
-      const cfg=getGalleryCfg();
-      const iv=document.getElementById('galInterval');
-      if(iv) iv.value=cfg.interval_ms||2500;
-      const am=document.getElementById('galAnimMs');
-      if(am) am.value=cfg.animation_ms||500;
+      
+      try {
+        const cfg = await getGalleryCfg();
+        const iv=document.getElementById('galInterval');
+        if(iv) iv.value=cfg.interval_ms||2500;
+        const am=document.getElementById('galAnimMs');
+        if(am) am.value=cfg.animation_ms||500;
+      } catch(e) { console.error('Error rendering config:', e); }
     }
     const galleryModal=document.createElement('div');
     galleryModal.className='modal';

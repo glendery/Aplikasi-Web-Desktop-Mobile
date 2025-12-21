@@ -49,8 +49,9 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Skip non-GET requests
+  // Skip non-GET requests and unsupported schemes
   if (req.method !== 'GET') return;
+  if (url.protocol === 'chrome-extension:') return;
 
   event.respondWith((async () => {
     // 1. Favicon special case
