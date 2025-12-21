@@ -898,7 +898,9 @@
 
 
 
-    <script src="data-services.js">    if (document.getElementById('chatA11yToggle')) {
+    <script src="data-services.js"></script>
+    <script>
+    if (document.getElementById('chatA11yToggle')) {
         const btn = document.getElementById('chatA11yToggle');
         btn.addEventListener('click', () => {
             const isSafe = document.body.classList.toggle('color-safe');

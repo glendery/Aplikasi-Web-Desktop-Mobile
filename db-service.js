@@ -59,10 +59,19 @@ class BedasDBService {
     if (this.useFirebase) {
       try {
         const snapshot = await this.db.collection(this.collectionNames[collectionKey]).get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Update LocalStorage cache for offline fallback
+        try {
+             localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(data));
+        } catch(err) { console.warn('Cache update failed', err); }
+        return data;
       } catch (e) {
-        console.error('DB Read Error:', e);
-        return [];
+        console.error('DB Read Error (Firebase), falling back to LocalStorage:', e);
+        // Fallback to LocalStorage
+        try {
+            const key = this.collectionNames[collectionKey];
+            return JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (err) { return []; }
       }
     } else {
       // LocalStorage
