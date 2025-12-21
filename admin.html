@@ -746,7 +746,11 @@
       let stats=[];
       try{ stats=JSON.parse(localStorage.getItem('bedas_submissions_stats')||'[]'); }catch(e){}
       const totalEl=document.getElementById('statTotalPermanent');
-      if(totalEl) totalEl.textContent = stats.length;
+      
+      // Base count disamakan dengan halaman depan
+      const BASE_COUNT = 1530;
+      
+      if(totalEl) totalEl.textContent = stats.length + BASE_COUNT;
       const canvas=document.getElementById('statsChart');
       if(!canvas) return;
       const ctx=canvas.getContext('2d');

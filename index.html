@@ -131,6 +131,10 @@
   function getSubmissions(){ try { return JSON.parse(localStorage.getItem('bedas_submissions')||'[]'); } catch(e){ return []; } }
   function getServedTotal(){ try { return parseInt(localStorage.getItem('bedas_served_total')||'0',10)||0; } catch(e){ return 0; } }
   function getServedIndex(){ try { return JSON.parse(localStorage.getItem('bedas_served_index')||'[]'); } catch(e){ return []; } }
+  
+  // Base count untuk data historis sebelum sistem online
+  const BASE_SERVED_COUNT = 1530;
+
   function updateServedCard(){
     const el=document.getElementById('servedTotal'); if(!el) return;
     let current = 0;
@@ -145,6 +149,9 @@
     } catch(e) {
       current = getSubmissions().length;
     }
+    
+    // Tambahkan base count
+    current += BASE_SERVED_COUNT;
 
     const last= parseInt(localStorage.getItem('bedas_served_display_last')||'0',10)||0;
     if(current!==last){ el.classList.add('stat-change'); setTimeout(()=>{ el.classList.remove('stat-change'); }, 900); localStorage.setItem('bedas_served_display_last', String(current)); }
