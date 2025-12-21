@@ -45,4 +45,5 @@ BEDAS SERVE is a comprehensive admin dashboard for managing the "Kecamatan Dayeu
 - **Fix**: Resolved "Konfirmasi" and "Simpan" button responsiveness in Gallery.
 - **Fix**: Resolved deletion errors ("GA BISA DIHAPUS") for gallery and services.
 - **Fix**: Implemented data seeding to fix empty dashboard issues.
-- **Refactor**: Removed Firebase dependency for a fully offline-capable system (LocalStorage only).
+- **Refactor**: Re-integrated Firebase Realtime Database for Cloud Sync.
+- **Config**: Removed Netlify-specific configurations for clean localhost testing.

@@ -5,10 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard Admin – BEDAS SERVE</title>
   <meta name="theme-color" content="#058a83">
+  <link rel="icon" href="images/Dayeuklt.jpg">
   <link rel="stylesheet" href="styles.css">
   <style>
     /* Firebase & BedasDB */
     </style>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
     <script src="data-services.js"></script>
     <script src="db-service.js"></script>
     <style>
@@ -179,7 +185,7 @@
   <div class="admin-container">
     <div class="admin-header">
       <div class="admin-title">
-        <img src="images/ikon.png" alt="BEDAS" style="width:40px;height:40px;border-radius:8px;">
+        <img src="images/Dayeuklt.jpg" alt="BEDAS" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">
         <div>
           <div style="font-weight:800;color:var(--toska-dark)">Dashboard Admin</div>
           <div style="font-size:13px;color:var(--text-light)">Kecamatan Dayeuhkolot</div>
@@ -919,9 +925,9 @@
           let services = await window.BedasDB.getServices();
           if (services.length > 0) {
               // --- SYNC SPECIFIC SERVICES FROM CODEBASE ---
-              if (typeof defaultServices !== 'undefined') {
+              if (typeof defaultServicesList !== 'undefined') {
                   const warisTitle = "Layanan PERMOHONAN AHLI WARIS";
-                  const warisDefault = defaultServices.find(s => s.title === warisTitle);
+                  const warisDefault = defaultServicesList.find(s => s.title === warisTitle);
                   const warisStored = services.find(s => s.title === warisTitle);
                   
                   if (warisDefault && warisStored) {
@@ -935,10 +941,10 @@
           }
           
           // Auto-seed dari data-services.js jika kosong
-          if (typeof defaultServices !== 'undefined') {
+          if (typeof defaultServicesList !== 'undefined') {
               console.log('Seeding default services...');
-              await saveServices(defaultServices);
-              return defaultServices;
+              await saveServices(defaultServicesList);
+              return defaultServicesList;
           }
           return [];
       } catch(e) { return []; }
@@ -954,7 +960,7 @@
       try { data = await getServices(); } catch(e){}
       
       // Check if empty (likely due to fresh Cloud DB)
-      if (data.length === 0 && typeof defaultServices !== 'undefined') {
+      if (data.length === 0 && typeof defaultServicesList !== 'undefined') {
           rowsEl.innerHTML = `
              <div style="padding:20px;text-align:center;grid-column:1/-1">
                 <p>Belum ada data layanan (Cloud masih baru).</p>
@@ -1027,8 +1033,8 @@
     
     window.resetServices = async function() {
         if(!confirm('PERINGATAN: Ini akan menghapus semua layanan custom dan mengembalikan ke 45 layanan bawaan. Lanjutkan?')) return;
-        if (typeof defaultServices === 'undefined') { alert('Data default tidak ditemukan!'); return; }
-        await saveServices(defaultServices);
+        if (typeof defaultServicesList === 'undefined') { alert('Data default tidak ditemukan!'); return; }
+        await saveServices(defaultServicesList);
         window.AdminAuth.logActivity('RESET_SERVICES', 'Mereset database layanan ke default');
         await renderServices();
         alert('Layanan berhasil direset ke default.');
@@ -1071,35 +1077,6 @@
 
     
     // Removed duplicate deleteService function to fix conflict
-
-
-    svcForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const idx = document.getElementById('svcIndex').value;
-      const title = document.getElementById('svcTitle').value;
-      const keywords = document.getElementById('svcKeywords').value.split(',').map(s=>s.trim()).filter(Boolean);
-      const description = document.getElementById('svcDesc').value;
-      const requirements = document.getElementById('svcReq').value.split('\n').map(s=>s.trim()).filter(Boolean);
-      const procedure = document.getElementById('svcProc').value.split('\n').map(s=>s.trim()).filter(Boolean);
-      const system = document.getElementById('svcSystem').value.split('\n').map(s=>s.trim()).filter(Boolean);
-      const isFree = document.getElementById('svcFree').checked;
-
-      const newItem = { title, keywords, description, requirements, procedure, system, isFree };
-      const data = getServices();
-
-      if (idx !== '') {
-        data[idx] = newItem;
-        window.AdminAuth.logActivity('EDIT_SERVICE', `Mengupdate layanan: ${title}`);
-      } else {
-        data.push(newItem);
-        window.AdminAuth.logActivity('ADD_SERVICE', `Menambah layanan baru: ${title}`);
-      }
-      
-      saveServices(data);
-      closeServiceModal();
-      renderServices();
-      renderAudit();
-    });
 
     // 5. Komitmen Logic
     async function getKomitmen(){ 
@@ -1807,8 +1784,8 @@
         
         // Ensure data exists (Bot Services)
         let services = await window.BedasDB.getServices();
-        if (services.length === 0 && typeof defaultServices !== 'undefined') {
-             const seeded = defaultServices.map(s => ({
+        if (services.length === 0 && typeof defaultServicesList !== 'undefined') {
+             const seeded = defaultServicesList.map(s => ({
                 ...s,
                 id: s.id || (Date.now().toString(36) + Math.random().toString(36).substr(2))
             }));
@@ -1818,12 +1795,12 @@
         // Ensure data exists before rendering (Featured)
         let featured = await window.BedasDB.getFeatured();
         if (featured.length === 0) {
-            const defaultServices = [
+            const defaultFeatured = [
                 { id: '1', icon: '🤖', title: 'Asisten Virtual', desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.' },
                 { id: '2', icon: '📄', title: 'Database Layanan Lengkap', desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.' },
                 { id: '3', icon: '📱', title: 'Terintegrasi WhatsApp', desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.' }
             ];
-            await window.BedasDB.saveFeatured(defaultServices);
+            await window.BedasDB.saveFeatured(defaultFeatured);
         }
         
         // Ensure data exists (Popular)
@@ -2132,12 +2109,12 @@
 
     window.resetFeaturedDefault = async function() {
         if(!confirm('Reset ke default (3 layanan awal)?')) return;
-        const defaultServices = [
+        const defaultFeatured = [
             { id: '1', icon: '🤖', title: 'Asisten Virtual', desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.' },
             { id: '2', icon: '📄', title: 'Database Layanan Lengkap', desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.' },
             { id: '3', icon: '📱', title: 'Terintegrasi WhatsApp', desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.' }
         ];
-        await window.BedasDB.saveFeatured(defaultServices);
+        await window.BedasDB.saveFeatured(defaultFeatured);
         window.AdminAuth.logActivity('RESET_FEATURED', 'Reset layanan unggulan ke default');
         await renderFeatured();
         renderAudit();
@@ -2205,6 +2182,39 @@
     document.onkeypress = resetTimer;
     document.onclick = resetTimer;
     document.onscroll = resetTimer;
+
+    // --- REAL-TIME AUTO REFRESH LISTENERS ---
+    // Mengaktifkan sinkronisasi otomatis antar browser/device
+    if (window.BedasDB && window.BedasDB.subscribe) {
+        console.log('Activating Real-time Auto Refresh...');
+        
+        // Submissions (juga memicu renderStats)
+        window.BedasDB.subscribe('submissions', () => { 
+            // Gunakan timeout kecil agar tidak blocking jika update cepat
+            setTimeout(() => { renderSubmissions(); }, 10);
+        });
+        
+        // Services
+        window.BedasDB.subscribe('services', () => { renderServices(); });
+        
+        // Featured
+        window.BedasDB.subscribe('featured', () => { renderFeatured(); });
+        
+        // Popular
+        window.BedasDB.subscribe('popular', () => { renderPopular(); });
+        
+        // Gallery
+        window.BedasDB.subscribe('gallery', () => { renderGallery(); });
+        
+        // Komitmen
+        window.BedasDB.subscribe('komitmen', () => { renderKomitmen(); });
+        
+        // Social
+        window.BedasDB.subscribe('social', () => { renderSocial(); });
+        
+        // Audit Logs
+        window.BedasDB.subscribe('logs', () => { renderAudit(); });
+    }
   </script>
 </body>
 </html>

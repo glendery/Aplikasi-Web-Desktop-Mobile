@@ -140,10 +140,17 @@ button, .btn-cta, .nav a, .mini-link {
 
 /* Navigasi mobile */
 @media (max-width: 820px) {
-  .menu-toggle { display: none; }
+  .menu-toggle { display: block; } /* Ensure it's visible */
   .nav { display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 8px; padding-bottom: 8px; }
   .nav a { flex: 0 0 auto; }
   .header.nav-open .nav { position: static; display: flex; background: none; padding: 0; }
+}
+
+@media (max-width: 480px) {
+  .menu-toggle {
+    font-size: 16px; /* Diperkecil lagi dari 18px */
+    padding: 4px;    /* Diperkecil lagi dari 6px */
+  }
 }
 
 .logo-img {
@@ -1301,8 +1308,13 @@ footer {
 .social-section {
   padding: var(--section-pad-b) 5%;
 }
-.social-carousel { max-width: var(--container-max); margin: 0 auto; }
-.social-carousel .carousel-slide { padding: 0 12px; box-sizing: border-box; }
+.social-carousel { 
+  max-width: 670px; 
+  margin: 0 auto; 
+  position: relative;
+  padding: 0 48px;
+}
+.social-carousel .carousel-slide { padding: 0 8px; box-sizing: border-box; }
 
 
 .map-route-btn {
@@ -1333,17 +1345,124 @@ footer {
   .map-section iframe { height: 420px; }
   .map-pane iframe { min-height: 420px; }
   .map-route-btn { padding: 10px 16px; font-size: clamp(0.9rem, 3vw, 1rem); }
+  .social-carousel { max-width: 100%; padding: 0; } /* Restore width on mobile */
+  .carousel-btn { width: 32px; height: 32px; }
+  .carousel-btn.prev { left: 4px; }
+  .carousel-btn.next { right: 4px; }
 }
 .social-carousel .social-card { 
-  max-width: clamp(320px, 72vw, 720px); 
+  max-width: 260px; /* Reduced to be more compact */
   margin: 0 auto; 
 }
+
+/* =========================================
+   DESKTOP ONLY: MODERN SOCIAL CARDS & GAP
+   ========================================= */
+@media (min-width: 821px) {
+  /* Gap handled via padding to keep JS alignment correct */
+  .social-carousel .carousel-slide {
+    padding: 0 19px; /* 19*2 = 38px visual gap */
+  }
+
+  .social-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px;
+    padding: 32px 20px;
+    box-shadow: 
+      0 10px 30px -10px rgba(0, 0, 0, 0.08),
+      0 4px 12px -4px rgba(0, 0, 0, 0.04),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Springy pop */
+    overflow: visible; /* Allow elements to pop out if needed */
+  }
+
+  .social-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 
+      0 20px 40px -12px rgba(5, 138, 131, 0.15),
+      0 8px 16px -4px rgba(0, 0, 0, 0.06);
+    border-color: #fff;
+    z-index: 10;
+  }
+
+  .social-preview {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #f0fdfa, #ffffff);
+    border-radius: 22px;
+    box-shadow: 
+      0 8px 16px rgba(5, 138, 131, 0.06),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.02);
+    margin-bottom: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    transition: transform 0.4s ease;
+  }
+  
+  .social-card:hover .social-preview {
+    transform: scale(1.1) rotate(-3deg);
+  }
+
+  .social-info h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-heading);
+    margin-bottom: 6px;
+  }
+
+  .social-info p {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    opacity: 0.8;
+    margin-bottom: 20px;
+  }
+
+  .mini-link {
+    background: var(--toska-soft);
+    color: var(--toska-dark);
+    padding: 10px 24px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-decoration: none !important;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+  }
+
+  .social-card:hover .mini-link {
+    background: var(--toska-main);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(5, 138, 131, 0.3);
+    transform: translateY(2px);
+  }
+}
+
 .carousel-viewport { position: relative; overflow: hidden; }
 .carousel-track { display: flex; gap: 0; transition: transform 400ms ease-in-out; will-change: transform; }
 .carousel-slide { flex: 0 0 auto; }
-.carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.45); color: #fff; border: none; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2; }
-.carousel-btn.prev { left: 8px; }
-.carousel-btn.next { right: 8px; }
+.carousel-btn { 
+  position: absolute; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  background: rgba(0,0,0,0.45); 
+  color: #fff; 
+  border: none; 
+  width: 40px; 
+  height: 40px; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  cursor: pointer; 
+  z-index: 2; 
+}
+.carousel-btn.prev { left: 0; }
+.carousel-btn.next { right: 0; }
 .carousel-dots { display: flex; justify-content: center; gap: clamp(4px, 1vw, 8px); padding: 8px 0; }
 .carousel-dot { 
   cursor: pointer; 
@@ -1496,24 +1615,44 @@ footer {
   margin: 0 auto;
 }
 .social-card {
-  display: grid;
-  grid-template-columns: 120px 1fr;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  background: rgba(255,255,255,0.92);
-  border: 1px solid rgba(0, 90, 81, 0.12);
-  border-radius: var(--radius-3);
+  text-align: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
   text-decoration: none;
   color: var(--text-heading);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  will-change: transform;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform, box-shadow;
+  position: relative;
+  overflow: hidden;
 }
 .social-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  border-color: rgba(0, 90, 81, 0.1);
 }
+/* Shine effect on hover */
+.social-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: 0.5s;
+}
+.social-card:hover::after {
+  left: 100%;
+}
+
 .social-card.rotator-will,
 .social-card.rotator-active {
   transition: opacity 500ms cubic-bezier(0.25, 0.1, 0.25, 1.0), transform 500ms cubic-bezier(0.25, 0.1, 0.25, 1.0);
@@ -1534,40 +1673,66 @@ footer {
 }
 @media (prefers-reduced-motion: reduce) {
   .social-card { transition: none; }
+  .social-card::after { display: none; }
 }
 .social-preview {
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--toska-soft);
-  border-radius: var(--radius-2);
-  padding: var(--space-2);
+  border-radius: 14px;
+  padding: 10px;
+  width: 64px;
+  height: 64px;
 }
 .social-preview img {
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
+  transition: transform 0.3s ease;
+}
+@keyframes bounce-icon {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.1); }
+}
+
+.social-card:hover .social-preview img {
+  animation: bounce-icon 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
 }
 .social-info h3 {
-  margin: 0;
+  margin: 0 0 2px 0;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--toska-dark);
 }
 .social-info p {
-  margin: 4px 0 10px;
+  margin: 0 0 4px 0;
+  font-size: 0.75rem;
   color: var(--text-light);
+  line-height: 1.3;
+}
+.mini-link {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--toska-main);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.social-card:hover .mini-link {
+  opacity: 1;
+  text-decoration: underline;
 }
 
-.web-card {
-  background: linear-gradient(135deg, #eafff9, #d9f4ef);
-  border-color: rgba(5, 138, 131, 0.22);
-}
-.web-card .social-info h3 {
-  font-weight: 800;
-  letter-spacing: 0.4px;
-  color: var(--toska-dark);
-}
-.web-card .social-info p {
-  color: var(--text-light);
+/* Remove old specific card colors for minimalist look, or keep them very subtle? 
+   User said "minimalist", so uniform clean look is better. 
+   But I will keep the classes but reset their backgrounds to maintain the minimalist white theme 
+   unless they are needed for differentiation. */
+.web-card, .insta-card, .tiktok-card, .naker-card {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.04) !important;
 }
 
 .floating-chat {

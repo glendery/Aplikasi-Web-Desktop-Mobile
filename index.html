@@ -3,16 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dayeuhkolot Bedas Serve – Kecamatan Dayeuhkolot</title>
+    
+    <!-- SEO & Meta Tags -->
+    <title>Dayeuhkolot Bedas Serve – Pelayanan Publik Kecamatan Dayeuhkolot</title>
+    <meta name="description" content="Portal resmi pelayanan publik Kecamatan Dayeuhkolot, Kabupaten Bandung. Informasi KTP, KK, layanan administrasi, dan berita terkini Dayeuhkolot.">
+    <meta name="keywords" content="Dayeuhkolot, Kecamatan Dayeuhkolot, Pelayanan Publik, Bandung, KTP Dayeuhkolot, KK Dayeuhkolot, Bedas Serve">
+    <meta name="author" content="Pemerintah Kecamatan Dayeuhkolot">
+    <meta name="robots" content="index, follow">
+
+    <!-- Google Search Console -->
+    <meta name="google-site-verification" content="bhP--UhfqsP67aMlYYBE-vz9YsLQn2_xYJKZXxGeibE" />
+    
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dayeuhkolot-bedasserve.netlify.app/">
+    <meta property="og:title" content="Dayeuhkolot Bedas Serve – Pelayanan Publik Terpadu">
+    <meta property="og:description" content="Akses mudah layanan publik Kecamatan Dayeuhkolot. Cek persyaratan, ajukan permohonan, dan dapatkan informasi terkini.">
+    <meta property="og:image" content="https://dayeuhkolot-bedasserve.netlify.app/images/Dayeuklt.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://dayeuhkolot-bedasserve.netlify.app/">
+    <meta property="twitter:title" content="Dayeuhkolot Bedas Serve">
+    <meta property="twitter:description" content="Portal resmi pelayanan publik Kecamatan Dayeuhkolot, Kabupaten Bandung.">
+    <meta property="twitter:image" content="https://dayeuhkolot-bedasserve.netlify.app/images/Dayeuklt.jpg">
+
     <meta name="theme-color" content="#058a83">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="images/ikon.png">
+    <link rel="apple-touch-icon" href="images/Dayeuklt.jpg">
     <link rel="manifest" href="manifest.webmanifest">
 
-    <link rel="icon" type="image/png" href="images/ikon.png">
+    <link rel="icon" type="image/jpeg" href="images/Dayeuklt.jpg">
     <link rel="stylesheet" href="styles.css?v=20251220-mobile-fix-scroll">
     
     <!-- BedasDB (Offline Mode) -->
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
     <script src="data-services.js"></script>
     <script src="db-service.js"></script>
 </head>
@@ -465,10 +494,10 @@
           </a>
         </div>
       </div>
-      <button class="carousel-btn prev" aria-label="Sebelumnya">‹</button>
-      <button class="carousel-btn next" aria-label="Berikutnya">›</button>
-      <div class="carousel-dots" role="tablist" aria-label="Navigasi Carousel"></div>
     </div>
+    <button class="carousel-btn prev" aria-label="Sebelumnya">‹</button>
+    <button class="carousel-btn next" aria-label="Berikutnya">›</button>
+    <div class="carousel-dots" role="tablist" aria-label="Navigasi Carousel"></div>
     <noscript>
       <div class="social-grid">
         <a class="social-card insta-card" href="https://www.instagram.com/kecamatandayeuhkolot/" target="_blank" rel="noopener noreferrer">Instagram</a>
@@ -586,7 +615,7 @@
 
         if (services.length === 0) {
             // Default services if DB is empty
-             const defaultServices = [
+             const defaultFeatured = [
                 {
                     id: '1',
                     icon: '🤖',
@@ -606,7 +635,7 @@
                     desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.'
                 }
             ];
-            services = defaultServices;
+            services = defaultFeatured;
             // Optionally seed DB if online/admin? No, just display default.
         }
 
@@ -1025,13 +1054,13 @@
         if (Array.isArray(data) && data.length > 0) {
             track.innerHTML = data.map(item => `
                     <div class="carousel-slide">
-                      <a class="social-card" href="${item.link}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%; background:white; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,0.08); padding:24px; border:1px solid rgba(0,90,81,0.1);">
+                      <a class="social-card" href="${item.link}" target="_blank" rel="noopener noreferrer">
                         <div class="social-preview">
-                          <img src="${item.icon}" alt="${item.name}" style="width:80px; height:80px; object-fit:contain; margin-bottom:16px;" loading="lazy">
+                          <img src="${item.icon}" alt="${item.name}" loading="lazy">
                         </div>
-                        <div class="social-info" style="text-align:center;">
-                          <h3 style="font-size:1.2rem; font-weight:700; color:var(--toska-dark); margin-bottom:8px;">${item.name}</h3>
-                          <span class="mini-link" style="display:inline-block; padding:8px 16px; background:var(--toska-soft); color:var(--toska-dark); border-radius:99px; font-weight:600; font-size:0.9rem;">Kunjungi</span>
+                        <div class="social-info">
+                          <h3>${item.name}</h3>
+                          <span class="mini-link">Kunjungi</span>
                         </div>
                       </a>
                     </div>
@@ -1054,7 +1083,8 @@
     let slideW = 0;
     let timer = null;
     function setSizes() {
-      slideW = Math.floor(viewport.clientWidth);
+      const isMobile = window.innerWidth < 768;
+      slideW = isMobile ? viewport.clientWidth : Math.floor(viewport.clientWidth / 2);
       Array.from(track.children).forEach(s => { s.style.width = slideW+'px'; });
       track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
     }
@@ -1099,12 +1129,11 @@
       const total = track.children.length;
       if (current >= total - 2) {
         track.style.transition = 'none';
-        current = current % baseCount;
-        current += 2;
+        current -= baseCount;
         track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
       } else if (current <= 1) {
         track.style.transition = 'none';
-        current = baseCount + 1;
+        current += baseCount;
         track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
       }
     });

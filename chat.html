@@ -6,11 +6,16 @@
     <title>Dayeuhkolot Bedas Serve – Layanan Mandiri</title>
     <meta name="theme-color" content="#058a83">
     <meta name="mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="images/ikon.png">
+    <link rel="apple-touch-icon" href="images/Dayeuklt.jpg">
+    <link rel="icon" href="images/Dayeuklt.jpg">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="styles.css">
     
-    <!-- BedasDB (LocalStorage) -->
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
     <script src="data-services.js"></script>
     <script src="db-service.js"></script>
     
@@ -592,10 +597,47 @@
             .messages-card { padding: 12px; }
             .options-container { grid-template-columns: 1fr; gap: 8px; }
             .option-btn { width: 100%; font-size: 14px; padding: 10px 12px; }
-            .input-area { flex-wrap: wrap; gap: 8px; }
-            .input-area input { flex: 1 1 100%; width: 100%; }
+            
+            /* Mobile Chat Input Fix: Side-by-side */
+            .input-area { 
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important; 
+                gap: 8px; 
+                align-items: center; 
+            }
+            .input-area input { 
+                flex: 1 1 auto !important; 
+                width: auto !important; 
+                min-width: 0; 
+            }
+            .input-area button {
+                flex: 0 0 40px !important;
+                width: 40px !important;
+                height: 40px !important;
+            }
+            
             #openHistory { flex: 1 1 100%; width: 100%; margin-left: 0 !important; }
             .scroll-bottom-btn { right: 14px; bottom: 160px; }
+
+            /* Mobile Modal Fix: Layanan Input & Button */
+            #browseServicesBtn { 
+                width: 36px !important; 
+                height: 36px !important; 
+                min-width: 36px !important;
+                max-width: 36px !important;
+                font-size: 16px !important; 
+                padding: 0 !important; 
+                flex: 0 0 36px !important;
+                margin: 0 !important;
+            }
+            #cfLayanan { 
+                font-size: 13px !important; 
+                padding: 8px 10px !important;
+                flex: 1 1 0% !important;
+                width: 0 !important; /* Force flex grow */
+                min-width: 0 !important;
+            }
         }
         body.compact .messages-card { padding: 8px; }
         body.compact .message { padding: 8px 10px; max-width: 96%; }
@@ -1348,9 +1390,9 @@
                 // Use BedasDB to get services (online or local)
                 let data = await BedasDB.getServices();
                 
-                // If empty (first run or offline/empty), seed from defaultServices if available
-                if (data.length === 0 && typeof defaultServices !== 'undefined') {
-                    data = [...defaultServices];
+                // If empty (first run or offline/empty), seed from defaultServicesList if available
+                if (data.length === 0 && typeof defaultServicesList !== 'undefined') {
+                    data = [...defaultServicesList];
                     // Migrate legacy if exists
                     try {
                         const legacy = JSON.parse(localStorage.getItem('bedas_extra_services') || '[]');
@@ -1364,9 +1406,9 @@
                     await BedasDB.saveServices(data);
                 } else {
                      // Sync specific code updates
-                     if (typeof defaultServices !== 'undefined') {
+                     if (typeof defaultServicesList !== 'undefined') {
                         const warisTitle = "Layanan PERMOHONAN AHLI WARIS";
-                        const warisDefault = defaultServices.find(s => s.title === warisTitle);
+                        const warisDefault = defaultServicesList.find(s => s.title === warisTitle);
                         const warisStored = data.find(s => s.title === warisTitle);
                         
                         if (warisDefault && warisStored) {
@@ -1387,7 +1429,7 @@
             } catch(e) {
                 console.error('Service DB Init Failed:', e);
                 // Fallback to default if available
-                if (typeof defaultServices !== 'undefined') services = [...defaultServices];
+                if (typeof defaultServicesList !== 'undefined') services = [...defaultServicesList];
                 else services = [];
             }
         }

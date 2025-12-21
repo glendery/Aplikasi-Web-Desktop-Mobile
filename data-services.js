@@ -1,4 +1,4 @@
-const defaultServices = [
+const defaultServicesList = [
     // --- LAYANAN 1-5 ---
     {
         title: "Identitas Kependudukan Digital (IKD)",
@@ -893,3 +893,7 @@ const defaultServices = [
         ]
     }
 ];
+
+if (typeof window !== 'undefined') {
+    window.defaultServicesList = defaultServicesList;
+}
