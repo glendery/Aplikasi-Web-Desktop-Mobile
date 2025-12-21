@@ -72,7 +72,6 @@ function recordAttempt(success) {
 // --- Audit Log ---
 
 function logActivity(action, details, user = 'admin') {
-  const logs = JSON.parse(localStorage.getItem(DB_KEYS.AUDIT) || '[]');
   const entry = {
     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
     ts: new Date().toISOString(),
@@ -81,10 +80,15 @@ function logActivity(action, details, user = 'admin') {
     details,
     ip: '127.0.0.1' // Simulasi
   };
-  logs.unshift(entry);
-  // Simpan max 100 log
-  if (logs.length > 100) logs.pop();
-  localStorage.setItem(DB_KEYS.AUDIT, JSON.stringify(logs));
+  
+  if (window.BedasDB) {
+      window.BedasDB.addLog(entry).catch(e => console.error('Log failed', e));
+  } else {
+      const logs = JSON.parse(localStorage.getItem(DB_KEYS.AUDIT) || '[]');
+      logs.unshift(entry);
+      if (logs.length > 100) logs.pop();
+      localStorage.setItem(DB_KEYS.AUDIT, JSON.stringify(logs));
+  }
 }
 
 // --- Auth Functions ---
@@ -205,7 +209,10 @@ window.AdminAuth = {
   checkSession,
   requireAuth,
   logActivity,
-  getAuditLogs: () => JSON.parse(localStorage.getItem(DB_KEYS.AUDIT) || '[]'),
+  getAuditLogs: async () => { 
+      if(window.BedasDB) return await window.BedasDB.getLogs(); 
+      return JSON.parse(localStorage.getItem(DB_KEYS.AUDIT) || '[]'); 
+  },
   getSession,
   getCurrentUser,
   can,

@@ -17,8 +17,9 @@ class BedasDBService {
       places: 'bedas_places', // Untuk peta
       featured: 'bedas_featured_services',
       popular: 'bedas_popular_services',
-      gallery_cfg: 'bedas_gallery_cfg',
-      positions_cfg: 'bedas_positions_cfg'
+      gallery_cfg: 'bedas_gallery_config',
+      positions_cfg: 'bedas_positions_config',
+      logs: 'bedas_audit_logs'
     };
   }
 
@@ -94,40 +95,80 @@ class BedasDBService {
       try {
         // Gunakan ID dari data sebagai Doc ID agar konsisten
         await this.db.collection(this.collectionNames[collectionKey]).doc(data.id).set(data);
+        // Also update LocalStorage for consistency immediately
+        this._updateLocal(collectionKey, data, 'add');
         return data;
       } catch (e) {
-        console.error('DB Write Error:', e);
-        throw e;
+        console.error('DB Write Error (Firebase), falling back to LocalStorage:', e);
+        // Fallback execution continues below
       }
-    } else {
-      const list = await this.getAll(collectionKey);
-      list.push(data);
-      localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(list));
-      return data;
-    }
+    } 
+    
+    // LocalStorage Logic (Fallback or Default)
+    return this._updateLocal(collectionKey, data, 'add');
   }
 
   async update(collectionKey, id, newData) {
     if (this.useFirebase) {
-      await this.db.collection(this.collectionNames[collectionKey]).doc(id).update(newData);
-    } else {
-      const list = await this.getAll(collectionKey);
-      const idx = list.findIndex(item => item.id === id);
-      if (idx !== -1) {
-        list[idx] = { ...list[idx], ...newData };
-        localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(list));
+      try {
+        await this.db.collection(this.collectionNames[collectionKey]).doc(id).update(newData);
+        // Sync local
+        const current = (await this.getAll(collectionKey)).find(x => x.id === id) || {};
+        this._updateLocal(collectionKey, { ...current, ...newData, id }, 'update');
+        return;
+      } catch(e) {
+         console.error('DB Update Error (Firebase), falling back to LocalStorage:', e);
       }
+    }
+    
+    // LocalStorage Fallback
+    const list = await this._getLocal(collectionKey);
+    const idx = list.findIndex(item => item.id === id);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...newData };
+      localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(list));
     }
   }
 
   async delete(collectionKey, id) {
     if (this.useFirebase) {
-      await this.db.collection(this.collectionNames[collectionKey]).doc(id).delete();
-    } else {
-      let list = await this.getAll(collectionKey);
-      list = list.filter(item => item.id !== id);
-      localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(list));
+      try {
+        await this.db.collection(this.collectionNames[collectionKey]).doc(id).delete();
+        this._updateLocal(collectionKey, { id }, 'delete');
+        return;
+      } catch(e) {
+        console.error('DB Delete Error (Firebase), falling back to LocalStorage:', e);
+      }
     }
+    
+    // LocalStorage Fallback
+    this._updateLocal(collectionKey, { id }, 'delete');
+  }
+
+  // Helper for LocalStorage updates
+  async _getLocal(collectionKey) {
+      try {
+        return JSON.parse(localStorage.getItem(this.collectionNames[collectionKey]) || '[]');
+      } catch(e) { return []; }
+  }
+
+  _updateLocal(collectionKey, data, action) {
+      try {
+          const key = this.collectionNames[collectionKey];
+          let list = JSON.parse(localStorage.getItem(key) || '[]');
+          if (action === 'add') {
+             const exists = list.findIndex(x => x.id === data.id);
+             if(exists === -1) list.push(data);
+             else list[exists] = data;
+          } else if (action === 'update') {
+             const idx = list.findIndex(x => x.id === data.id);
+             if(idx !== -1) list[idx] = { ...list[idx], ...data };
+          } else if (action === 'delete') {
+             list = list.filter(x => x.id !== data.id);
+          }
+          localStorage.setItem(key, JSON.stringify(list));
+          return data;
+      } catch(e) { console.error('Local Cache Error', e); return data; }
   }
 
   async setAll(collectionKey, dataArray) {
@@ -159,25 +200,36 @@ class BedasDBService {
             });
 
             await batch.commit();
+            // Sync LocalStorage
+            localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(dataArray));
+            return;
         } catch(e) {
-            console.error('BedasDB: Sync Error', e);
-            throw e;
+            console.error('BedasDB: Sync Error (Firebase), falling back to LocalStorage:', e);
+            // Fallback to LocalStorage
         }
-    } else {
-        localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(dataArray));
-    }
+    } 
+    
+    // LocalStorage Fallback
+    localStorage.setItem(this.collectionNames[collectionKey], JSON.stringify(dataArray));
   }
 
   async deleteAll(collectionKey) {
     if (this.useFirebase) {
-        const collectionRef = this.db.collection(this.collectionNames[collectionKey]);
-        const snapshot = await collectionRef.get();
-        const batch = this.db.batch();
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-    } else {
-        localStorage.removeItem(this.collectionNames[collectionKey]);
-    }
+        try {
+            const collectionRef = this.db.collection(this.collectionNames[collectionKey]);
+            const snapshot = await collectionRef.get();
+            const batch = this.db.batch();
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            localStorage.removeItem(this.collectionNames[collectionKey]);
+            return;
+        } catch(e) {
+            console.error('BedasDB: DeleteAll Error (Firebase), falling back to LocalStorage:', e);
+        }
+    } 
+    
+    // LocalStorage Fallback
+    localStorage.removeItem(this.collectionNames[collectionKey]);
   }
 
 
@@ -226,10 +278,17 @@ class BedasDBService {
 
   async saveGalleryCfg(data) {
     if (this.useFirebase) {
-      await this.db.collection(this.collectionNames.gallery_cfg).doc('main').set(data);
-    } else {
-      localStorage.setItem(this.collectionNames.gallery_cfg, JSON.stringify(data));
+      try {
+        await this.db.collection(this.collectionNames.gallery_cfg).doc('main').set(data);
+        localStorage.setItem(this.collectionNames.gallery_cfg, JSON.stringify(data));
+        return;
+      } catch(e) {
+        console.error('Save Gallery Cfg Error (Firebase), fallback to Local:', e);
+      }
     }
+    
+    // LocalStorage Fallback
+    localStorage.setItem(this.collectionNames.gallery_cfg, JSON.stringify(data));
   }
 
   async getPositions() {
@@ -237,24 +296,68 @@ class BedasDBService {
     if (this.useFirebase) {
       try {
         const doc = await this.db.collection(this.collectionNames.positions_cfg).doc('main').get();
-        if (doc.exists && doc.data().items) return doc.data().items;
+        if (doc.exists && doc.data().items) {
+             const items = doc.data().items;
+             localStorage.setItem(this.collectionNames.positions_cfg, JSON.stringify(items));
+             return items;
+        }
         return defaultPos;
-      } catch(e) { return defaultPos; }
-    } else {
-      try {
+      } catch(e) {
+         // Fallback
+         try {
+            const d = localStorage.getItem(this.collectionNames.positions_cfg);
+            if (d) return JSON.parse(d);
+            return defaultPos;
+         } catch(err) { return defaultPos; }
+      }
+    } 
+    
+    // LocalStorage Logic
+    try {
         const d = localStorage.getItem(this.collectionNames.positions_cfg);
         if (d) return JSON.parse(d);
         return defaultPos;
-      } catch(e) { return defaultPos; }
-    }
+    } catch(e) { return defaultPos; }
   }
 
   async savePositions(list) {
     if (this.useFirebase) {
-      await this.db.collection(this.collectionNames.positions_cfg).doc('main').set({ items: list });
-    } else {
-      localStorage.setItem(this.collectionNames.positions_cfg, JSON.stringify(list));
-    }
+      try {
+        await this.db.collection(this.collectionNames.positions_cfg).doc('main').set({ items: list });
+        localStorage.setItem(this.collectionNames.positions_cfg, JSON.stringify(list));
+        return;
+      } catch(e) {
+        console.error('Save Positions Error (Firebase), fallback to Local:', e);
+      }
+    } 
+    
+    // LocalStorage Fallback
+    localStorage.setItem(this.collectionNames.positions_cfg, JSON.stringify(list));
+  }
+
+  async getLogs() { return this.getAll('logs'); }
+  async addLog(data) {
+      if (this.useFirebase) {
+          try {
+            // Add to Firestore (auto-ID)
+            await this.db.collection(this.collectionNames.logs).add(data);
+            // Also log to Firebase Analytics if available
+            if (typeof firebase !== 'undefined' && firebase.analytics) {
+                firebase.analytics().logEvent(data.action || 'log', data);
+            }
+            // Sync LocalStorage for backup
+            this._updateLocal('logs', data, 'add');
+            return;
+          } catch(e) {
+            console.error('Add Log Error (Firebase), fallback to Local:', e);
+          }
+      } 
+      
+      // LocalStorage fallback
+      const logs = await this.getLogs();
+      logs.unshift(data);
+      if(logs.length > 200) logs.pop(); // Limit local logs
+      localStorage.setItem(this.collectionNames.logs, JSON.stringify(logs));
   }
 
 }

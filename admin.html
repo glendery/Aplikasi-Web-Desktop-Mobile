@@ -340,6 +340,7 @@
     <div id="tab-gallery" class="tab-content">
       <div class="filter-bar" style="flex-wrap: wrap;">
         <button class="option-btn" onclick="openGalleryModal('add')" style="background:var(--toska-dark);color:#fff;">+ Tambah Foto</button>
+        <button class="option-btn" onclick="resetGalleryDefault()" style="background:#ff9800;color:#fff;">↻ Reset Default</button>
         <input id="fltGallery" placeholder="Cari nama/deskripsi..." style="flex:1;min-width:220px" oninput="renderGallery()">
         <div style="display:flex;align-items:center;gap:8px;">
           <label for="galInterval" style="font-size:12px;color:#666">Interval (ms)</label>
@@ -828,10 +829,13 @@
         } catch(e) { console.error(e); }
     }
 
-    function renderAudit() {
-      const logs = window.AdminAuth.getAuditLogs();
+    async function renderAudit() {
+      let logs = [];
+      try { logs = await window.AdminAuth.getAuditLogs(); } catch(e) { console.error('Audit render error', e); }
       const el = document.getElementById('auditRows');
-      document.getElementById('statAudit').textContent = logs.length;
+      const statEl = document.getElementById('statAudit');
+      if(statEl) statEl.textContent = logs.length;
+      if(!el) return;
       
       el.innerHTML = logs.map(l => `
         <div class="audit-row">
@@ -1383,13 +1387,13 @@
     }
 
     // 7. Backup Snapshot (otomatis saat perubahan)
-    function snapshotBackup(){
+    async function snapshotBackup(){
       try{
         const snaps = JSON.parse(localStorage.getItem('bedas_backup_snapshots')||'[]');
         const entry = {
           ts: new Date().toISOString(),
-          komitmen: getKomitmen(),
-          social: getSocial()
+          komitmen: await getKomitmen(),
+          social: await getSocial()
         };
         snaps.unshift(entry);
         if(snaps.length>20) snaps.pop();
@@ -1555,6 +1559,24 @@
       await renderGallery();
       renderAudit();
     };
+
+    window.resetGalleryDefault = async function() {
+        if(!confirm('Reset galeri ke data default? Semua foto saat ini akan dihapus/ditimpa.')) return;
+        
+        const defaults = [
+            { id: '1', position: 'Camat', name: 'Drs. H. Yudi Fadilah, M.Si', desc: 'Camat Dayeuhkolot', tenure: '2022 - Sekarang', order: 0, image: 'images/camat.jpg' },
+            { id: '2', position: 'Sekretaris Kecamatan', name: 'Nama Sekcam', desc: 'Sekretaris Kecamatan', tenure: '', order: 1, image: 'images/default_user.png' },
+            { id: '3', position: 'Kasi Pemerintahan', name: 'Nama Kasi', desc: 'Kepala Seksi Pemerintahan', tenure: '', order: 2, image: 'images/default_user.png' },
+            { id: '4', position: 'Kasi Pelayanan', name: 'Nama Kasi', desc: 'Kepala Seksi Pelayanan', tenure: '', order: 3, image: 'images/default_user.png' }
+        ];
+        
+        await saveGallery(defaults);
+        window.AdminAuth.logActivity('RESET_GALLERY', 'Mereset galeri ke default');
+        await renderGallery();
+        renderAudit();
+        alert('Galeri berhasil direset.');
+    };
+
     window.moveGalleryItem = async function(id, direction) {
         let data = await getGallery();
         const cfg = await getGalleryCfg();
@@ -1609,68 +1631,90 @@
       };
       fr.readAsDataURL(file);
     });
-    document.getElementById('galleryForm').addEventListener('submit',async (e)=>{
-      e.preventDefault();
-      const id=document.getElementById('galIndex').value;
-      const position=document.getElementById('galPosition').value;
-      const name=document.getElementById('galName').value;
-      const desc=document.getElementById('galDesc').value;
-      const tenure=document.getElementById('galTenure').value;
-      const order=parseInt(document.getElementById('galOrder').value||'0',10);
-      const fileInput=document.getElementById('galImage');
-      const posPersist=document.getElementById('posPersist').checked;
-      
-      let data = await getGallery();
-      let imageData=null;
-      
-      if(fileInput.files&&fileInput.files[0]){
-        const f=fileInput.files[0];
-        const okTypes=['image/jpeg','image/png'];
-        if(!okTypes.includes(f.type)){ alert('Hanya JPG atau PNG'); return; }
-        if(f.size>2*1024*1024){ alert('Ukuran maksimal 2MB'); return; }
-      }
-      
-      const finalizeSave = async () => {
-        if(posPersist && position){
-          let list = await getPositions();
-          if(!list.map(s=>s.toLowerCase()).includes(position.toLowerCase())){
-            list.push(position);
-            await savePositions(list);
-          }
-        }
-        
-        if(id){
-          const idx = data.findIndex(it => it.id === id);
-          if (idx !== -1) {
-              data[idx] = {...data[idx], position, name, desc, tenure, order, image: imageData!==null?imageData:data[idx].image};
-              window.AdminAuth.logActivity('EDIT_GALLERY','Mengedit foto: '+name);
-          }
-        } else {
-          const newId=Date.now().toString(36)+Math.random().toString(36).substr(2);
-          data.push({id: newId, ts:new Date().toISOString(), position, name, desc, tenure, order, image: imageData});
-          window.AdminAuth.logActivity('ADD_GALLERY','Menambah foto: '+name);
-        }
-        
-        await saveGallery(data);
-        closeGalleryModal();
-        await renderGallery();
-        renderAudit();
-      };
-      
-      if(fileInput.files&&fileInput.files[0]){
-        const fr=new FileReader();
-        fr.onload=()=>{ imageData=fr.result; finalizeSave(); };
-        fr.readAsDataURL(fileInput.files[0]);
-      }else{
-        await finalizeSave();
-      }
-    });
-    function onConfirm(msg, cb){
-      if(confirm(msg)){ cb(); }
+
+    // Fix: Gunakan listener yang lebih robust dan tambahkan validasi eksplisit
+    const galForm = document.getElementById('galleryForm');
+    const galConfirmBtn = document.getElementById('confirmGalleryBtn');
+
+    if (galForm) {
+        galForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Gallery form submitted');
+            
+            try {
+                const id=document.getElementById('galIndex').value;
+                const position=document.getElementById('galPosition').value;
+                const name=document.getElementById('galName').value;
+                const desc=document.getElementById('galDesc').value;
+                const tenure=document.getElementById('galTenure').value;
+                const order=parseInt(document.getElementById('galOrder').value||'0',10);
+                const fileInput=document.getElementById('galImage');
+                const posPersist=document.getElementById('posPersist').checked;
+                
+                let data = await getGallery();
+                let imageData=null;
+                
+                if(fileInput.files&&fileInput.files[0]){
+                    const f=fileInput.files[0];
+                    const okTypes=['image/jpeg','image/png'];
+                    if(!okTypes.includes(f.type)){ alert('Hanya JPG atau PNG'); return; }
+                    if(f.size>2*1024*1024){ alert('Ukuran maksimal 2MB'); return; }
+                }
+                
+                const finalizeSave = async () => {
+                    if(posPersist && position){
+                    let list = await getPositions();
+                    if(!list.map(s=>s.toLowerCase()).includes(position.toLowerCase())){
+                        list.push(position);
+                        await savePositions(list);
+                    }
+                    }
+                    
+                    if(id){
+                    const idx = data.findIndex(it => it.id === id);
+                    if (idx !== -1) {
+                        data[idx] = {...data[idx], position, name, desc, tenure, order, image: imageData!==null?imageData:data[idx].image};
+                        window.AdminAuth.logActivity('EDIT_GALLERY','Mengedit foto: '+name);
+                    }
+                    } else {
+                    const newId=Date.now().toString(36)+Math.random().toString(36).substr(2);
+                    data.push({id: newId, ts:new Date().toISOString(), position, name, desc, tenure, order, image: imageData});
+                    window.AdminAuth.logActivity('ADD_GALLERY','Menambah foto: '+name);
+                    }
+                    
+                    await saveGallery(data);
+                    closeGalleryModal();
+                    await renderGallery();
+                    renderAudit();
+                    alert('Data galeri berhasil disimpan');
+                };
+                
+                if(fileInput.files&&fileInput.files[0]){
+                    const fr=new FileReader();
+                    fr.onload=()=>{ imageData=fr.result; finalizeSave(); };
+                    fr.readAsDataURL(fileInput.files[0]);
+                }else{
+                    await finalizeSave();
+                }
+            } catch (err) {
+                console.error('Gallery Submit Error:', err);
+                alert('Terjadi kesalahan saat menyimpan: ' + err.message);
+            }
+        });
     }
-    document.getElementById('confirmGalleryBtn').addEventListener('click',()=>{
-      onConfirm('Simpan perubahan galeri?', ()=> document.getElementById('galleryForm').requestSubmit());
-    });
+
+    if (galConfirmBtn) {
+        galConfirmBtn.addEventListener('click', () => {
+            console.log('Confirm button clicked');
+            if (!galForm.checkValidity()) {
+                galForm.reportValidity();
+                return;
+            }
+            if(confirm('Simpan perubahan galeri?')){ 
+                galForm.requestSubmit(); 
+            }
+        });
+    }
     document.getElementById('saveIntervalBtn').addEventListener('click', async ()=>{
       const v=parseInt(document.getElementById('galInterval').value||'2500',10);
       const ms=isNaN(v)?2500:v;
