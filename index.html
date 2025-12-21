@@ -12,6 +12,12 @@
     <link rel="icon" type="image/png" href="images/ikon.png">
     <link rel="stylesheet" href="styles.css?v=20251220-mobile-fix-scroll">
     
+    <!-- Firebase & BedasDB -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="db-service.js"></script>
 </head>
 <body>
 
@@ -128,26 +134,29 @@
   function normalizePhone(v){ const d=String(v||'').replace(/\D/g,''); if(!d) return ''; if(d.startsWith('62')) return d; if(d.startsWith('0')) return '62'+d.slice(1); return d; }
   function isValidPhone(v){ const d=String(v||'').replace(/\D/g,''); if(!d) return false; const n=normalizePhone(d); return /^62\d{8,13}$/.test(n); }
   function formatID(n){ return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
-  function getSubmissions(){ try { return JSON.parse(localStorage.getItem('bedas_submissions')||'[]'); } catch(e){ return []; } }
-  function getServedTotal(){ try { return parseInt(localStorage.getItem('bedas_served_total')||'0',10)||0; } catch(e){ return 0; } }
-  function getServedIndex(){ try { return JSON.parse(localStorage.getItem('bedas_served_index')||'[]'); } catch(e){ return []; } }
   
   // Base count untuk data historis sebelum sistem online
   const BASE_SERVED_COUNT = 1530;
 
-  function updateServedCard(){
+  async function updateServedCard(){
     const el=document.getElementById('servedTotal'); if(!el) return;
     let current = 0;
     try {
+      // Pastikan DB init dulu
+      if(!window.BedasDB.initialized) await window.BedasDB.init();
+      window.BedasDB.initialized = true;
+
       // Prioritaskan data permanen (statistik) agar tidak berkurang saat admin menghapus data
-      const stats = JSON.parse(localStorage.getItem('bedas_submissions_stats')||'[]');
+      const stats = await window.BedasDB.getStats();
       current = stats.length;
       if (current === 0) {
         // Fallback ke data aktif jika statistik kosong
-        current = getSubmissions().length;
+        const subs = await window.BedasDB.getSubmissions();
+        current = subs.length;
       }
     } catch(e) {
-      current = getSubmissions().length;
+      console.error('Error fetching stats:', e);
+      // Fallback local if needed or just 0
     }
     
     // Tambahkan base count
@@ -569,41 +578,39 @@
     });
 
     // --- Featured Services Logic ---
-    (function renderFeaturedServices() {
-        // ... (Existing code for featured services) ...
+    (async function renderFeaturedServices() {
         const container = document.getElementById('featuredContainer');
         if (!container) return;
 
-        const defaultServices = [
-            {
-                id: '1',
-                icon: '🤖',
-                title: 'Asisten Virtual',
-                desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.'
-            },
-            {
-                id: '2',
-                icon: '📄',
-                title: 'Database Layanan Lengkap',
-                desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.'
-            },
-            {
-                id: '3',
-                icon: '📱',
-                title: 'Terintegrasi WhatsApp',
-                desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.'
-            }
-        ];
-
         let services = [];
         try {
-            const stored = localStorage.getItem('bedas_featured_services');
-            if (stored) services = JSON.parse(stored);
-        } catch (e) { console.error('Error parsing featured services', e); }
+            services = await window.BedasDB.getFeatured();
+        } catch (e) { console.error('Error fetching featured services', e); }
 
         if (services.length === 0) {
+            // Default services if DB is empty
+             const defaultServices = [
+                {
+                    id: '1',
+                    icon: '🤖',
+                    title: 'Asisten Virtual',
+                    desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.'
+                },
+                {
+                    id: '2',
+                    icon: '📄',
+                    title: 'Database Layanan Lengkap',
+                    desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.'
+                },
+                {
+                    id: '3',
+                    icon: '📱',
+                    title: 'Terintegrasi WhatsApp',
+                    desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.'
+                }
+            ];
             services = defaultServices;
-            localStorage.setItem('bedas_featured_services', JSON.stringify(services));
+            // Optionally seed DB if online/admin? No, just display default.
         }
 
         container.innerHTML = services.map(s => {
@@ -621,26 +628,23 @@
     })();
 
     // --- Popular Services Logic ---
-    (function renderPopularServices() {
+    (async function renderPopularServices() {
         const container = document.getElementById('popularContainer');
         if (!container) return;
 
-        const defaultPopular = [
-            { id: '1', icon: 'images/ikon/ktp.svg', title: 'Pembuatan & Perubahan KTP' },
-            { id: '2', icon: 'images/ikon/kk.svg', title: 'Perubahan Data KK' },
-            { id: '3', icon: 'images/ikon/akta.svg', title: 'Akta Kelahiran' },
-            { id: '4', icon: 'images/ikon/domisili.svg', title: 'Surat Pindah Datang / Keluar' }
-        ];
-
         let services = [];
         try {
-            const stored = localStorage.getItem('bedas_popular_services');
-            if (stored) services = JSON.parse(stored);
-        } catch (e) { console.error('Error parsing popular services', e); }
+            services = await window.BedasDB.getPopular();
+        } catch (e) { console.error('Error fetching popular services', e); }
 
         if (services.length === 0) {
+            const defaultPopular = [
+                { id: '1', icon: 'images/ikon/ktp.svg', title: 'Pembuatan & Perubahan KTP' },
+                { id: '2', icon: 'images/ikon/kk.svg', title: 'Perubahan Data KK' },
+                { id: '3', icon: 'images/ikon/akta.svg', title: 'Akta Kelahiran' },
+                { id: '4', icon: 'images/ikon/domisili.svg', title: 'Surat Pindah Datang / Keluar' }
+            ];
             services = defaultPopular;
-            localStorage.setItem('bedas_popular_services', JSON.stringify(services));
         }
 
         container.innerHTML = services.map(s => `
@@ -710,17 +714,25 @@
   function hideLoading(){const o=document.getElementById('loadingOverlay');o.style.display='none';}
   // PWA install prompt dihilangkan sesuai permintaan
   // no external link handler required
-  (function(){
+  (async function(){
     const cont=document.getElementById('heroCamat');
     const figure=document.querySelector('.hero-figure');
     if(!cont) return;
-    function getGallery(){ try{const d=localStorage.getItem('bedas_gallery_db');if(d)return JSON.parse(d);return [];}catch(e){return [];} }
-    function getCfg(){ try{const d=localStorage.getItem('bedas_gallery_cfg');if(d)return JSON.parse(d);return {interval_ms:2500};}catch(e){return {interval_ms:2500};} }
+    
+    // Helper to get data from BedasDB
+    async function getGalleryData() {
+        try { return await window.BedasDB.getGallery(); } catch(e){ return []; }
+    }
+    async function getGalleryCfg() {
+        try { return await window.BedasDB.getGalleryCfg(); } catch(e){ return {interval_ms:2500}; }
+    }
+
     const roleOrder={Camat:0,'Wakil Camat':1,Anggota:2};
     let timer=null, idx=0, dataCache=[];
     let prevBtn=null, nextBtn=null, dotsWrap=null;
-    function sortedData(){
-      const arr=getGallery();
+
+    async function sortedData(){
+      const arr = await getGalleryData();
       // DEFAULT FALLBACK if empty: use Pak Camat default
       if(!arr || arr.length === 0) {
         return [{
@@ -739,6 +751,7 @@
       }).filter(it=>it && it.image);
       return dataCache;
     }
+
     function show(it){
       const pre=new Image();
       pre.className='hero-camat-inline';
@@ -794,20 +807,23 @@
     function updateDots(){
       return;
     }
-    function next(){ const d=sortedData(); if(!d.length) return; idx=(idx+1)%d.length; show(d[idx]); }
-    function prev(){ const d=sortedData(); if(!d.length) return; idx=(idx-1+d.length)%d.length; show(d[idx]); }
+    async function next(){ const d=await sortedData(); if(!d.length) return; idx=(idx+1)%d.length; show(d[idx]); }
+    async function prev(){ const d=await sortedData(); if(!d.length) return; idx=(idx-1+d.length)%d.length; show(d[idx]); }
     function stopAuto(){ if(timer){ clearInterval(timer); timer=null; } }
-    function startAuto(){ 
-      const ms=Math.max(5000, parseInt(getCfg().interval_ms||5000,10));
+    async function startAuto(){ 
+      const cfg = await getGalleryCfg();
+      const ms=Math.max(5000, parseInt(cfg.interval_ms||5000,10));
       if(timer) clearInterval(timer);
       timer=setInterval(()=>{ next(); }, ms);
     }
-    function start(){
-      const data=sortedData();
+    async function start(){
+      const data=await sortedData();
       if(!data.length){ cont.innerHTML=''; return; }
       idx=idx%data.length;
       show(data[idx]);
-      const ms=Math.max(5000, parseInt(getCfg().interval_ms||5000,10));
+      
+      const cfg = await getGalleryCfg();
+      const ms=Math.max(5000, parseInt(cfg.interval_ms||5000,10));
       if(timer) clearInterval(timer);
       timer=setInterval(()=>{ next(); }, ms);
       buildControls();
@@ -961,7 +977,7 @@
     buildDots();
     startAuto();
   })();
-  (function(){
+  (async function(){
     const root = document.querySelector('.social-section .social-carousel');
     if(!root) return;
     const viewport = root.querySelector('.carousel-viewport');
@@ -978,9 +994,17 @@
         ];
         let data = [];
         try {
-            const stored = localStorage.getItem('bedas_social_db');
-            if (stored) data = JSON.parse(stored);
-        } catch (e) {}
+             // Use BedasDB
+            if (window.BedasDB) {
+                 if(!window.BedasDB.initialized) await window.BedasDB.init();
+                 const dbData = await window.BedasDB.getSocial();
+                 if (dbData && dbData.length > 0) data = dbData;
+            }
+            if (data.length === 0) {
+                const stored = localStorage.getItem('bedas_social_db');
+                if (stored) data = JSON.parse(stored);
+            }
+        } catch (e) { console.error(e); }
         if (!data || !Array.isArray(data) || data.length === 0) data = defaultSocial;
 
         if (Array.isArray(data) && data.length > 0) {

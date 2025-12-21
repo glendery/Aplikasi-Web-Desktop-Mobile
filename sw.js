@@ -1,17 +1,24 @@
-const CACHE_NAME = 'bedas-serve-v5';
+const CACHE_NAME = 'bedas-serve-v7';
 const ASSETS = [
   '/',
   '/index.html',
   '/chat.html',
+  '/admin.html',
   '/offline.html',
   '/styles.css',
+  '/db-service.js',
+  '/firebase-config.js',
+  '/data-services.js',
   '/images/ikon.png',
   '/images/logo pemkab.png',
   '/images/kecamatan.png',
   '/images/camat.png',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap',
-  'https://unpkg.com/mammoth/mammoth.browser.min.js'
+  'https://unpkg.com/mammoth/mammoth.browser.min.js',
+  'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js',
+  'https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js'
 ];
 
 // Install Service Worker

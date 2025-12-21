@@ -7,6 +7,14 @@
   <meta name="theme-color" content="#058a83">
   <link rel="stylesheet" href="styles.css">
   <style>
+    /* Firebase & BedasDB */
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="db-service.js"></script>
+    <style>
     body{background: var(--gradient-soft);}
     .admin-container{max-width:1200px;margin:32px auto;padding:22px;background:linear-gradient(180deg,#ffffff,rgba(250,250,250,0.95));border-radius:16px;box-shadow:0 16px 40px rgba(14,30,37,0.12);border:1px solid rgba(8,37,47,0.06)}
     .admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid rgba(0,0,0,0.08)}
@@ -619,19 +627,22 @@
       if(confirm('Keluar dari dashboard?')) window.AdminAuth.logout();
     });
 
-    function renderSubmissions() {
+    async function renderSubmissions() {
       const rowsEl = document.getElementById('rows');
       let data = [];
-      try { data = JSON.parse(localStorage.getItem('bedas_submissions') || '[]'); } catch(e){}
+      try { data = await window.BedasDB.getSubmissions(); } catch(e){ console.error(e); }
       
+      // Sort by TS descending
+      data.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+
       const filter = document.getElementById('fltText').value.toLowerCase();
       const filtered = data.filter(item => {
         if(!filter) return true;
         return JSON.stringify(item).toLowerCase().includes(filter);
-      }).reverse();
+      });
 
       document.getElementById('statTotal').textContent = data.length;
-      renderStats();
+      await renderStats();
 
       rowsEl.innerHTML = filtered.map(item => `
         <div class="table-row">
@@ -690,7 +701,7 @@
       } catch(e){}
     }
 
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = document.getElementById('editId').value;
       const nama = document.getElementById('fNama').value;
@@ -698,34 +709,62 @@
       const layanan = document.getElementById('fLayanan').value;
       const pesan = document.getElementById('fPesan').value;
 
-      let data = JSON.parse(localStorage.getItem('bedas_submissions') || '[]');
+      try {
+          if (id) {
+            // Edit Mode
+            await window.BedasDB.update('submissions', id, { nama, hp, layanan, pesan });
+            window.AdminAuth.logActivity('EDIT_DATA', `Mengedit data ID: ${id}`);
+          } else {
+            // Add Mode
+            const newItem = {
+              ts: new Date().toISOString(),
+              nama, hp, layanan, pesan,
+              source: 'admin_manual'
+            };
+            const added = await window.BedasDB.addSubmission(newItem);
+            await appendPermanentStat(added);
+            window.AdminAuth.logActivity('ADD_DATA', `Menambah data baru: ${nama}`);
+          }
 
-      if (id) {
-        // Edit Mode
-        const idx = data.findIndex(d => d.id === id);
-        if (idx !== -1) {
-          data[idx] = { ...data[idx], nama, hp, layanan, pesan };
-          window.AdminAuth.logActivity('EDIT_DATA', `Mengedit data ID: ${id}`);
-        }
-      } else {
-        // Add Mode
-        const newItem = {
-          id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-          ts: new Date().toISOString(),
-          nama, hp, layanan, pesan,
-          source: 'admin_manual'
-        };
-        data.push(newItem);
-        appendPermanentStat(newItem);
-        window.AdminAuth.logActivity('ADD_DATA', `Menambah data baru: ${nama}`);
+          closeModal();
+          await renderSubmissions();
+          renderAudit();
+          await renderStats();
+      } catch(e) {
+          console.error(e);
+          alert('Gagal menyimpan data');
       }
-
-      localStorage.setItem('bedas_submissions', JSON.stringify(data));
-      closeModal();
-      renderSubmissions();
-      renderAudit();
-      renderStats();
     });
+
+    window.editItem = async function(id) {
+        try {
+            const data = await window.BedasDB.getSubmissions();
+            const item = data.find(d => d.id === id);
+            if (item) {
+                openModal('edit', item);
+            }
+        } catch(e) { console.error(e); }
+    };
+
+    window.deleteItem = async function(id) {
+        if(!confirm('Hapus data ini?')) return;
+        try {
+            await window.BedasDB.delete('submissions', id);
+            window.AdminAuth.logActivity('DELETE_DATA', `Menghapus data ID: ${id}`);
+            await renderSubmissions();
+            renderAudit();
+            await renderStats();
+        } catch(e) { console.error(e); }
+    };
+
+    async function appendPermanentStat(newItem) {
+        try {
+            await window.BedasDB.addStat({
+                ts: newItem.ts,
+                id_submission: newItem.id || 'manual'
+            });
+        } catch(e) { console.error(e); }
+    }
 
     function renderAudit() {
       const logs = window.AdminAuth.getAuditLogs();
@@ -742,9 +781,9 @@
       `).join('');
     }
 
-    function renderStats(){
+    async function renderStats(){
       let stats=[];
-      try{ stats=JSON.parse(localStorage.getItem('bedas_submissions_stats')||'[]'); }catch(e){}
+      try{ stats = await window.BedasDB.getStats(); }catch(e){}
       const totalEl=document.getElementById('statTotalPermanent');
       
       // Base count disamakan dengan halaman depan
@@ -789,12 +828,11 @@
     }
 
     // 4. Services Logic
-    function getServices() {
-      // Baca dari Single Source of Truth: 'bedas_services_db'
+    async function getServices() {
+      // Baca dari Single Source of Truth via BedasDB
       try { 
-          const stored = localStorage.getItem('bedas_services_db');
-          if (stored) {
-              const services = JSON.parse(stored);
+          let services = await window.BedasDB.getServices();
+          if (services.length > 0) {
               // --- SYNC SPECIFIC SERVICES FROM CODEBASE ---
               if (typeof defaultServices !== 'undefined') {
                   const warisTitle = "Layanan PERMOHONAN AHLI WARIS";
@@ -805,7 +843,7 @@
                        // Force update templates and procedure from code
                        warisStored.templates = warisDefault.templates;
                        warisStored.procedure = warisDefault.procedure;
-                       saveServices(services);
+                       await saveServices(services);
                   }
               }
               return services;
@@ -814,25 +852,23 @@
           // Auto-seed dari data-services.js jika kosong
           if (typeof defaultServices !== 'undefined') {
               console.log('Seeding default services...');
-              saveServices(defaultServices);
+              await saveServices(defaultServices);
               return defaultServices;
           }
           return [];
       } catch(e) { return []; }
     }
     
-    function saveServices(data) {
-      localStorage.setItem('bedas_services_db', JSON.stringify(data));
+    async function saveServices(data) {
+      await window.BedasDB.saveServices(data);
     }
 
-    function renderServices() {
+    async function renderServices() {
       const rowsEl = document.getElementById('serviceRows');
-      const data = getServices();
+      const data = await getServices();
       const filter = document.getElementById('fltService').value.toLowerCase();
       
-      const filtered = data.filter((item, idx) => {
-        // Simpan index asli untuk edit/delete
-        item._idx = idx; 
+      const filtered = data.filter((item) => {
         if(!filter) return true;
         return (item.title + ' ' + (item.keywords||[]).join(' ')).toLowerCase().includes(filter);
       });
@@ -844,8 +880,8 @@
           <div style="font-weight:600">${item.title}</div>
           <div style="font-size:0.9rem;color:#666">${(item.keywords||[]).slice(0,3).join(', ')}...</div>
           <div style="display:flex;gap:4px;">
-            <button onclick="editService(${item._idx})" style="color:var(--toska-main);border:none;background:none;cursor:pointer;font-weight:600">Edit</button>
-            <button onclick="deleteService(${item._idx})" style="color:red;border:none;background:none;cursor:pointer;font-weight:600">Hapus</button>
+            <button onclick="editService('${item.id}')" style="color:var(--toska-main);border:none;background:none;cursor:pointer;font-weight:600">Edit</button>
+            <button onclick="deleteService('${item.id}')" style="color:red;border:none;background:none;cursor:pointer;font-weight:600">Hapus</button>
           </div>
         </div>
       `).join('') || '<div style="padding:20px;text-align:center">Belum ada layanan tambahan.</div>';
@@ -854,21 +890,23 @@
     const svcModal = document.getElementById('serviceModal');
     const svcForm = document.getElementById('serviceForm');
     
-    window.openServiceModal = function(mode, idx = null) {
+    window.openServiceModal = async function(mode, id = null) {
       svcModal.classList.add('open');
-      const data = getServices();
       
-      if (mode === 'edit' && idx !== null) {
-        const item = data[idx];
-        document.getElementById('svcModalTitle').textContent = 'Edit Layanan Bot';
-        document.getElementById('svcIndex').value = idx;
-        document.getElementById('svcTitle').value = item.title;
-        document.getElementById('svcKeywords').value = (item.keywords||[]).join(', ');
-        document.getElementById('svcDesc').value = item.description || '';
-        document.getElementById('svcReq').value = (item.requirements||[]).join('\n');
-        document.getElementById('svcProc').value = (item.procedure||[]).join('\n');
-        document.getElementById('svcSystem').value = (item.system||[]).join('\n');
-        document.getElementById('svcFree').checked = !!item.isFree;
+      if (mode === 'edit' && id !== null) {
+        const data = await getServices();
+        const item = data.find(i => i.id === id);
+        if(item) {
+            document.getElementById('svcModalTitle').textContent = 'Edit Layanan Bot';
+            document.getElementById('svcIndex').value = id; // Use ID here
+            document.getElementById('svcTitle').value = item.title;
+            document.getElementById('svcKeywords').value = (item.keywords||[]).join(', ');
+            document.getElementById('svcDesc').value = item.description || '';
+            document.getElementById('svcReq').value = (item.requirements||[]).join('\n');
+            document.getElementById('svcProc').value = (item.procedure||[]).join('\n');
+            document.getElementById('svcSystem').value = (item.system||[]).join('\n');
+            document.getElementById('svcFree').checked = !!item.isFree;
+        }
       } else {
         document.getElementById('svcModalTitle').textContent = 'Tambah Layanan Bot';
         svcForm.reset();
@@ -877,16 +915,61 @@
     };
     
     window.closeServiceModal = function() { svcModal.classList.remove('open'); };
-    window.editService = function(idx) { openServiceModal('edit', idx); };
+    window.editService = function(id) { openServiceModal('edit', id); };
+    window.deleteService = async function(id) {
+        if(!confirm('Hapus layanan ini?')) return;
+        let data = await getServices();
+        data = data.filter(i => i.id !== id);
+        await saveServices(data);
+        window.AdminAuth.logActivity('DELETE_SERVICE', `Menghapus layanan ID: ${id}`);
+        await renderServices();
+        renderAudit();
+    };
     
-    window.resetServices = function() {
+    window.resetServices = async function() {
         if(!confirm('PERINGATAN: Ini akan menghapus semua layanan custom dan mengembalikan ke 45 layanan bawaan. Lanjutkan?')) return;
         if (typeof defaultServices === 'undefined') { alert('Data default tidak ditemukan!'); return; }
-        saveServices(defaultServices);
+        await saveServices(defaultServices);
         window.AdminAuth.logActivity('RESET_SERVICES', 'Mereset database layanan ke default');
-        renderServices();
+        await renderServices();
         alert('Layanan berhasil direset ke default.');
     };
+    
+    // Service Form Submit
+    svcForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('svcIndex').value;
+        // ... gather values ...
+        const title = document.getElementById('svcTitle').value.trim();
+        const keywords = document.getElementById('svcKeywords').value.split(',').map(s=>s.trim()).filter(s=>s);
+        const description = document.getElementById('svcDesc').value.trim();
+        const requirements = document.getElementById('svcReq').value.split('\n').filter(s=>s.trim());
+        const procedure = document.getElementById('svcProc').value.split('\n').filter(s=>s.trim());
+        const system = document.getElementById('svcSystem').value.split('\n').filter(s=>s.trim());
+        const isFree = document.getElementById('svcFree').checked;
+        
+        const newItem = {
+            id: id || Date.now().toString(36) + Math.random().toString(36).substr(2),
+            title, keywords, description, requirements, procedure, system, isFree
+        };
+        
+        let data = await getServices();
+        if(id) {
+            const idx = data.findIndex(i => i.id === id);
+            if(idx !== -1) data[idx] = newItem;
+            else data.push(newItem); // Should not happen usually
+            window.AdminAuth.logActivity('EDIT_SERVICE', `Mengupdate layanan: ${title}`);
+        } else {
+            data.push(newItem);
+            window.AdminAuth.logActivity('ADD_SERVICE', `Menambah layanan: ${title}`);
+        }
+        
+        await saveServices(data);
+        closeServiceModal();
+        await renderServices();
+        renderAudit();
+    });
+
     
     window.deleteService = function(idx) {
       if(!confirm('Hapus layanan ini? Bot tidak akan bisa menjawab topik ini lagi.')) return;
@@ -927,32 +1010,37 @@
     });
 
     // 5. Komitmen Logic
-    function getKomitmen(){ try{const d=localStorage.getItem('bedas_komitmen_db'); if(d) return JSON.parse(d); return [];}catch(e){return [];} }
-    function saveKomitmen(list){ localStorage.setItem('bedas_komitmen_db', JSON.stringify(list)); }
+    async function getKomitmen(){ 
+        try{ return await window.BedasDB.getKomitmen(); }catch(e){return [];} 
+    }
+    async function saveKomitmen(list){ await window.BedasDB.saveKomitmen(list); }
     
-    window.resetKomitmenDefault = function() {
+    window.resetKomitmenDefault = async function() {
         if(!confirm('Reset data komitmen ke default? Data saat ini akan ditimpa.')) return;
         const defaults = [
-            { title: 'Bandung BEDAS', desc: '', image: 'images/slogan3.png', ts: new Date().toISOString() },
-            { title: 'Pemerintah Kab. Bandung', desc: '', image: 'images/logo pemkab.png', ts: new Date().toISOString() },
-            { title: 'Kecamatan Dayeuhkolot', desc: '', image: 'images/kecamatan.png', ts: new Date().toISOString() },
-            { title: 'Bangga Melayani', desc: '', image: 'images/slogan1.png', ts: new Date().toISOString() },
-            { title: 'BerAKHLAK', desc: '', image: 'images/slogan.png', ts: new Date().toISOString() }
+            { id: '1', title: 'Bandung BEDAS', desc: '', image: 'images/slogan3.png', ts: new Date().toISOString() },
+            { id: '2', title: 'Pemerintah Kab. Bandung', desc: '', image: 'images/logo pemkab.png', ts: new Date().toISOString() },
+            { id: '3', title: 'Kecamatan Dayeuhkolot', desc: '', image: 'images/kecamatan.png', ts: new Date().toISOString() },
+            { id: '4', title: 'Bangga Melayani', desc: '', image: 'images/slogan1.png', ts: new Date().toISOString() },
+            { id: '5', title: 'BerAKHLAK', desc: '', image: 'images/slogan.png', ts: new Date().toISOString() }
         ];
-        saveKomitmen(defaults);
+        await saveKomitmen(defaults);
         window.AdminAuth.logActivity('RESET_KOMITMEN', 'Mereset komitmen ke default');
-        renderKomitmen();
+        await renderKomitmen();
         renderAudit();
     };
 
     let komPage=1;
-    function renderKomitmen(){
+    async function renderKomitmen(){
       const rows=document.getElementById('komitmenRows');
-      let data=getKomitmen().map((it,idx)=>({...it,_idx:idx}));
+      let data = await getKomitmen();
+      
       const q=(document.getElementById('fltKomitmen').value||'').toLowerCase();
       const sort=(document.getElementById('komitmenSort').value||'title_asc');
       const pageSize=parseInt(document.getElementById('komitmenPageSize').value||'10',10);
+      
       data=data.filter(it=> (it.title||'').toLowerCase().includes(q) || (it.desc||'').toLowerCase().includes(q));
+      
       data=data.sort((a,b)=>{
         if(sort==='title_asc') return (a.title||'').localeCompare(b.title||'');
         if(sort==='title_desc') return (b.title||'').localeCompare(a.title||'');
@@ -960,18 +1048,20 @@
         if(sort==='ts_asc') return (new Date(a.ts||0)) - (new Date(b.ts||0));
         return 0;
       });
+
       const total=Math.max(1, Math.ceil(data.length/pageSize));
       if(komPage>total) komPage=total;
       const start=(komPage-1)*pageSize;
       const page=data.slice(start, start+pageSize);
+      
       rows.innerHTML=page.map(it=>`
         <div class="table-row" style="grid-template-columns: 120px 220px 1fr 180px;">
           <div><img src="${it.image||''}" alt="${(it.title||'')}" style="width:100px;height:75px;object-fit:contain;border:1px solid #eee;border-radius:8px"></div>
           <div style="font-weight:700">${it.title||'-'}</div>
           <div style="font-size:0.9rem;color:#666">${it.desc||'-'}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button onclick="editKomitmen(${it._idx})" class="option-btn">Edit</button>
-            <button onclick="deleteKomitmen(${it._idx})" class="option-btn btn-danger">Hapus</button>
+            <button onclick="editKomitmen('${it.id}')" class="option-btn">Edit</button>
+            <button onclick="deleteKomitmen('${it.id}')" class="option-btn btn-danger">Hapus</button>
           </div>
         </div>
       `).join('') || '<div style="padding:20px;text-align:center">Belum ada komitmen. Klik <b>Reset Default</b> atau Tambah Baru.</div>';
@@ -979,9 +1069,9 @@
     }
     window.prevKomitmenPage=function(){ if(komPage>1){ komPage--; renderKomitmen(); } };
     window.nextKomitmenPage=function(){ komPage++; renderKomitmen(); };
-    window.openKomitmenModal=function(mode,idx=null){
+    
+    window.openKomitmenModal=async function(mode, id=null){
       const m=document.getElementById('komitmenModal'); m.classList.add('open');
-      const data=getKomitmen();
       
       // Reset file input
       const fIn = document.getElementById('komImageFile');
@@ -989,13 +1079,16 @@
       const fClr = document.getElementById('clearKomImageFile');
       if(fClr) fClr.style.display = 'none';
 
-      if(mode==='edit'&&idx!==null){
-        const it=data[idx];
-        document.getElementById('komModalTitle').textContent='Edit Komitmen';
-        document.getElementById('komIndex').value=idx;
-        document.getElementById('komTitle').value=it.title||'';
-        document.getElementById('komDesc').value=it.desc||'';
-        document.getElementById('komImage').value=it.image||'';
+      if(mode==='edit'&& id!==null){
+        const data = await getKomitmen();
+        const it = data.find(d => d.id === id);
+        if(it) {
+            document.getElementById('komModalTitle').textContent='Edit Komitmen';
+            document.getElementById('komIndex').value=id;
+            document.getElementById('komTitle').value=it.title||'';
+            document.getElementById('komDesc').value=it.desc||'';
+            document.getElementById('komImage').value=it.image||'';
+        }
       }else{
         document.getElementById('komModalTitle').textContent='Tambah Komitmen';
         const f=document.getElementById('komitmenForm'); f && f.reset();
@@ -1003,12 +1096,18 @@
       }
     };
     window.closeKomitmenModal=function(){ document.getElementById('komitmenModal').classList.remove('open'); };
-    window.editKomitmen=function(idx){ openKomitmenModal('edit', idx); };
-    window.deleteKomitmen=function(idx){
+    window.editKomitmen=function(id){ openKomitmenModal('edit', id); };
+    window.deleteKomitmen=async function(id){
       if(!confirm('Hapus komitmen ini?')) return;
-      const data=getKomitmen(); const del=data.splice(idx,1);
-      saveKomitmen(data); window.AdminAuth.logActivity('DELETE_KOMITMEN', `Menghapus komitmen: ${del[0]?.title||''}`);
-      snapshotBackup(); renderKomitmen(); renderAudit();
+      let data = await getKomitmen(); 
+      const item = data.find(d => d.id === id);
+      data = data.filter(d => d.id !== id);
+      
+      await saveKomitmen(data); 
+      window.AdminAuth.logActivity('DELETE_KOMITMEN', `Menghapus komitmen: ${item?.title||id}`);
+      await snapshotBackup(); 
+      await renderKomitmen(); 
+      renderAudit();
     };
     
     // File Input Logic for Komitmen
@@ -1029,21 +1128,37 @@
         });
     }
 
-    document.getElementById('komitmenForm').addEventListener('submit',(e)=>{
+    document.getElementById('komitmenForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const idx=document.getElementById('komIndex').value;
+      const id = document.getElementById('komIndex').value;
       const title=document.getElementById('komTitle').value.trim();
       const desc=document.getElementById('komDesc').value.trim();
       let image=document.getElementById('komImage').value.trim();
       const fileIn=document.getElementById('komImageFile');
       
-      const saveLogic = (finalImg) => {
+      const saveLogic = async (finalImg) => {
           if(!title || !finalImg){ alert('Judul dan Gambar wajib diisi.'); return; }
-          const data=getKomitmen();
-          const item={ title, desc, image: finalImg, ts: new Date().toISOString() };
-          if(idx!==''){ data[idx]=item; window.AdminAuth.logActivity('EDIT_KOMITMEN', `Mengupdate: ${title}`); }
-          else { data.push(item); window.AdminAuth.logActivity('ADD_KOMITMEN', `Menambah: ${title}`); }
-          saveKomitmen(data); closeKomitmenModal(); snapshotBackup(); renderKomitmen(); renderAudit();
+          let data = await getKomitmen();
+          
+          if(id){ 
+              const idx = data.findIndex(d => d.id === id);
+              if(idx !== -1) {
+                  data[idx] = { ...data[idx], title, desc, image: finalImg };
+                  window.AdminAuth.logActivity('EDIT_KOMITMEN', `Mengupdate: ${title}`);
+              }
+          } else { 
+              const newItem = { 
+                  id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                  title, desc, image: finalImg, ts: new Date().toISOString() 
+              };
+              data.push(newItem); 
+              window.AdminAuth.logActivity('ADD_KOMITMEN', `Menambah: ${title}`); 
+          }
+          await saveKomitmen(data); 
+          closeKomitmenModal(); 
+          await snapshotBackup(); 
+          await renderKomitmen(); 
+          renderAudit();
       };
 
       if(fileIn && fileIn.files && fileIn.files[0]) {
@@ -1053,21 +1168,27 @@
           };
           reader.readAsDataURL(fileIn.files[0]);
       } else {
-          saveLogic(image);
+          await saveLogic(image);
       }
     });
 
     // 6. Social Logic
-    function getSocial(){ try{const d=localStorage.getItem('bedas_social_db'); if(d) return JSON.parse(d); return [];}catch(e){return [];} }
-    function saveSocial(list){ localStorage.setItem('bedas_social_db', JSON.stringify(list)); }
+    async function getSocial(){ 
+        try{ return await window.BedasDB.getSocial(); }catch(e){return [];} 
+    }
+    async function saveSocial(list){ await window.BedasDB.saveSocial(list); }
+
     let socPage=1;
-    function renderSocial(){
+    async function renderSocial(){
       const rows=document.getElementById('socialRows');
-      let data=getSocial().map((it,idx)=>({...it,_idx:idx}));
+      let data = await getSocial();
+      
       const q=(document.getElementById('fltSocial').value||'').toLowerCase();
       const sort=(document.getElementById('socialSort').value||'name_asc');
       const pageSize=parseInt(document.getElementById('socialPageSize').value||'10',10);
+      
       data=data.filter(it=> (it.name||'').toLowerCase().includes(q) || (it.link||'').toLowerCase().includes(q));
+      
       data=data.sort((a,b)=>{
         if(sort==='name_asc') return (a.name||'').localeCompare(b.name||'');
         if(sort==='name_desc') return (b.name||'').localeCompare(a.name||'');
@@ -1075,18 +1196,20 @@
         if(sort==='ts_asc') return (new Date(a.ts||0)) - (new Date(b.ts||0));
         return 0;
       });
+      
       const total=Math.max(1, Math.ceil(data.length/pageSize));
       if(socPage>total) socPage=total;
       const start=(socPage-1)*pageSize;
       const page=data.slice(start, start+pageSize);
+      
       rows.innerHTML=page.map(it=>`
         <div class="table-row" style="grid-template-columns: 120px 220px 1fr 180px;">
           <div><img src="${it.icon||''}" alt="${(it.name||'')}" style="width:80px;height:80px;object-fit:contain;border:1px solid #eee;border-radius:8px"></div>
           <div style="font-weight:700">${it.name||'-'}</div>
           <div style="font-size:0.9rem;color:#666"><a href="${it.link||'#'}" target="_blank" rel="noopener noreferrer">${it.link||'-'}</a></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button onclick="editSocial(${it._idx})" class="option-btn">Edit</button>
-            <button onclick="deleteSocial(${it._idx})" class="option-btn btn-danger">Hapus</button>
+            <button onclick="editSocial('${it.id}')" class="option-btn">Edit</button>
+            <button onclick="deleteSocial('${it.id}')" class="option-btn btn-danger">Hapus</button>
           </div>
         </div>
       `).join('') || '<div style="padding:20px;text-align:center">Belum ada channel. Tambahkan melalui tombol di atas.</div>';
@@ -1094,9 +1217,9 @@
     }
     window.prevSocialPage=function(){ if(socPage>1){ socPage--; renderSocial(); } };
     window.nextSocialPage=function(){ socPage++; renderSocial(); };
-    window.openSocialModal=function(mode,idx=null){
+    
+    window.openSocialModal=async function(mode, id=null){
       const m=document.getElementById('socialModal'); m.classList.add('open');
-      const data=getSocial();
       
       // Clear previous file input
       const fInput = document.getElementById('socIconFile');
@@ -1104,13 +1227,16 @@
       const clrBtn = document.getElementById('clearSocIconFile');
       if(clrBtn) clrBtn.style.display = 'none';
 
-      if(mode==='edit'&&idx!==null){
-        const it=data[idx];
-        document.getElementById('socModalTitle').textContent='Edit Channel';
-        document.getElementById('socIndex').value=idx;
-        document.getElementById('socName').value=it.name||'';
-        document.getElementById('socLink').value=it.link||'';
-        document.getElementById('socIcon').value=it.icon||'';
+      if(mode==='edit'&& id!==null){
+        const data = await getSocial();
+        const it = data.find(d => d.id === id);
+        if(it) {
+            document.getElementById('socModalTitle').textContent='Edit Channel';
+            document.getElementById('socIndex').value=id;
+            document.getElementById('socName').value=it.name||'';
+            document.getElementById('socLink').value=it.link||'';
+            document.getElementById('socIcon').value=it.icon||'';
+        }
       }else{
         document.getElementById('socModalTitle').textContent='Tambah Channel';
         const f=document.getElementById('socialForm'); f && f.reset();
@@ -1118,44 +1244,65 @@
       }
     };
     window.closeSocialModal=function(){ document.getElementById('socialModal').classList.remove('open'); };
-    window.editSocial=function(idx){ openSocialModal('edit', idx); };
-    window.deleteSocial=function(idx){
+    window.editSocial=function(id){ openSocialModal('edit', id); };
+    window.deleteSocial=async function(id){
       if(!confirm('Hapus channel ini?')) return;
-      const data=getSocial(); const del=data.splice(idx,1);
-      saveSocial(data); window.AdminAuth.logActivity('DELETE_SOCIAL', `Menghapus channel: ${del[0]?.name||''}`);
-      snapshotBackup(); renderSocial(); renderAudit();
+      let data = await getSocial();
+      const item = data.find(d => d.id === id);
+      data = data.filter(d => d.id !== id);
+      await saveSocial(data); 
+      window.AdminAuth.logActivity('DELETE_SOCIAL', `Menghapus channel: ${item?.name||id}`);
+      await snapshotBackup(); 
+      await renderSocial(); 
+      renderAudit();
     };
 
-    window.resetSocialDefault = function() {
+    window.resetSocialDefault = async function() {
         if(!confirm('Reset ke default (4 channel awal)?')) return;
         const defaultSocial = [
-            { name: 'Instagram', link: 'https://www.instagram.com/kecamatandayeuhkolot/', icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg', ts: new Date().toISOString() },
-            { name: 'Website Resmi', link: 'https://kecamatandayeuhkolot.bandungkab.go.id/', icon: 'images/kecamatan.png', ts: new Date().toISOString() },
-            { name: 'TikTok', link: 'https://www.tiktok.com/@kecamatandayeuhkolot?_r=1&_t=ZS-92IIBK8UmpU', icon: 'images/tiktok.png', ts: new Date().toISOString() },
-            { name: 'Info Resmi Lowongan Pekerjaan', link: 'https://dashnaker.bandungkab.go.id/demo/', icon: 'images/disnaker.jpg', ts: new Date().toISOString() }
+            { id: '1', name: 'Instagram', link: 'https://www.instagram.com/kecamatandayeuhkolot/', icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg', ts: new Date().toISOString() },
+            { id: '2', name: 'Website Resmi', link: 'https://kecamatandayeuhkolot.bandungkab.go.id/', icon: 'images/kecamatan.png', ts: new Date().toISOString() },
+            { id: '3', name: 'TikTok', link: 'https://www.tiktok.com/@kecamatandayeuhkolot?_r=1&_t=ZS-92IIBK8UmpU', icon: 'images/tiktok.png', ts: new Date().toISOString() },
+            { id: '4', name: 'Info Resmi Lowongan Pekerjaan', link: 'https://dashnaker.bandungkab.go.id/demo/', icon: 'images/disnaker.jpg', ts: new Date().toISOString() }
         ];
-        saveSocial(defaultSocial);
+        await saveSocial(defaultSocial);
         window.AdminAuth.logActivity('RESET_SOCIAL', 'Reset channel ke default');
-        snapshotBackup();
-        renderSocial();
+        await snapshotBackup();
+        await renderSocial();
         renderAudit();
     };
 
-    document.getElementById('socialForm').addEventListener('submit',(e)=>{
+    document.getElementById('socialForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const idx=document.getElementById('socIndex').value;
+      const id = document.getElementById('socIndex').value;
       const name=document.getElementById('socName').value.trim();
       const link=document.getElementById('socLink').value.trim();
       const icon=document.getElementById('socIcon').value.trim();
       const fileInput = document.getElementById('socIconFile');
 
-      const saveLogic = (finalIcon) => {
+      const saveLogic = async (finalIcon) => {
         if(!name || !link || !finalIcon){ alert('Nama, Link, dan Icon wajib.'); return; }
-        const data=getSocial();
-        const item={ name, link, icon: finalIcon, ts: new Date().toISOString() };
-        if(idx!==''){ data[idx]=item; window.AdminAuth.logActivity('EDIT_SOCIAL', `Mengupdate: ${name}`); }
-        else { data.push(item); window.AdminAuth.logActivity('ADD_SOCIAL', `Menambah: ${name}`); }
-        saveSocial(data); closeSocialModal(); snapshotBackup(); renderSocial(); renderAudit();
+        let data = await getSocial();
+        
+        if(id){ 
+            const idx = data.findIndex(d => d.id === id);
+            if(idx !== -1) {
+                data[idx] = { ...data[idx], name, link, icon: finalIcon, ts: new Date().toISOString() };
+                window.AdminAuth.logActivity('EDIT_SOCIAL', `Mengupdate: ${name}`);
+            }
+        } else { 
+            const newItem = { 
+                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                name, link, icon: finalIcon, ts: new Date().toISOString() 
+            };
+            data.push(newItem); 
+            window.AdminAuth.logActivity('ADD_SOCIAL', `Menambah: ${name}`); 
+        }
+        await saveSocial(data); 
+        closeSocialModal(); 
+        await snapshotBackup(); 
+        await renderSocial(); 
+        renderAudit();
       };
 
       if(fileInput && fileInput.files && fileInput.files[0]){
@@ -1163,9 +1310,10 @@
           reader.onload = function(evt) { saveLogic(evt.target.result); };
           reader.readAsDataURL(fileInput.files[0]);
       } else {
-          saveLogic(icon);
+          await saveLogic(icon);
       }
     });
+
 
     const socFile = document.getElementById('socIconFile');
     const clearSocFile = document.getElementById('clearSocIconFile');
@@ -1199,14 +1347,16 @@
       }catch(e){}
     }
 
-    function getGallery(){
-      try{const d=localStorage.getItem('bedas_gallery_db');if(d)return JSON.parse(d);return [];}catch(e){return [];}
-    }
-    function saveGallery(data){
-      localStorage.setItem('bedas_gallery_db', JSON.stringify(data));
-    }
-    function sortGallery(list){
-      const cfg=getGalleryCfg();
+    async function getGallery(){ try{return await window.BedasDB.getGallery();}catch(e){return[];} }
+    async function saveGallery(data){ await window.BedasDB.saveGallery(data); }
+    
+    async function getGalleryCfg(){ try{return await window.BedasDB.getGalleryCfg();}catch(e){return {interval_ms:2500, animation_ms:500, priority_order:['Camat','Wakil Camat']};} }
+    async function saveGalleryCfg(cfg){ await window.BedasDB.saveGalleryCfg(cfg); }
+    
+    async function getPositions(){ try{return await window.BedasDB.getPositions();}catch(e){return ['Camat','Wakil Camat','Sekretaris Kecamatan','Kasi Pemerintahan','Kasi Pelayanan'];} }
+    async function savePositions(list){ await window.BedasDB.savePositions(list); }
+
+    function sortGalleryHelper(list, cfg){
       const priority=Array.isArray(cfg.priority_order)?cfg.priority_order:[];
       const prIndex=(t)=>{ if(!t) return 999; const i=priority.findIndex(p=>String(p).toLowerCase()===String(t).toLowerCase()); return i===-1?999:i; };
       return list.slice().sort((a,b)=>{
@@ -1217,27 +1367,20 @@
         return (a.name||'').localeCompare(b.name||'');
       });
     }
-    function getGalleryCfg(){
-      try{const d=localStorage.getItem('bedas_gallery_cfg');if(d)return JSON.parse(d);return {interval_ms:2500, animation_ms:500, priority_order:['Camat','Wakil Camat']};}catch(e){return {interval_ms:2500, animation_ms:500, priority_order:['Camat','Wakil Camat']};}
-    }
-    function saveGalleryCfg(cfg){
-      localStorage.setItem('bedas_gallery_cfg', JSON.stringify(cfg));
-    }
-    function getPositions(){
-      try{const d=localStorage.getItem('bedas_positions_cfg');if(d)return JSON.parse(d);return ['Camat','Wakil Camat','Sekretaris Kecamatan','Kasi Pemerintahan','Kasi Pelayanan'];}catch(e){return ['Camat','Wakil Camat'];}
-    }
-    function savePositions(list){
-      localStorage.setItem('bedas_positions_cfg', JSON.stringify(list));
-    }
-    function renderGallery(){
+
+    async function renderGallery(){
       const rows=document.getElementById('galleryRows');
-      let data=getGallery();
+      let data = await getGallery();
+      const cfg = await getGalleryCfg();
       const filter=document.getElementById('fltGallery').value.toLowerCase();
+      
       data=data.filter(it=>{
         if(!filter)return true;
         return ((it.name||'')+' '+(it.desc||'')+' '+(it.position||it.role||'')+' '+(it.tenure||'')).toLowerCase().includes(filter);
       });
-      const sorted=sortGallery(data).map((it,idx)=>({...it,_idx:idx}));
+
+      const sorted = sortGalleryHelper(data, cfg);
+      
       rows.innerHTML=sorted.map(it=>`
         <div class="table-row" style="grid-template-columns: 120px 180px 180px 1fr 160px 90px 140px;">
           <div><img src="${it.image||''}" alt="${it.name||''}" style="width:100px;height:75px;object-fit:cover;border-radius:8px;border:1px solid #eee"></div>
@@ -1247,9 +1390,9 @@
           <div style="font-size:0.9rem;color:#444">${it.tenure||'-'}</div>
           <div>${it.order??0}</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
-            <button onclick="moveUp(${it._idx})" class="option-btn">▲</button>
-            <button onclick="moveDown(${it._idx})" class="option-btn">▼</button>
-            <button onclick="editGallery(${it._idx})" style="color:var(--toska-main);border:none;background:none;cursor:pointer;font-weight:600">Edit</button>
+            <button onclick="moveGalleryItem('${it.id}', -1)" class="option-btn">▲</button>
+            <button onclick="moveGalleryItem('${it.id}', 1)" class="option-btn">▼</button>
+            <button onclick="editGallery('${it.id}')" style="color:var(--toska-main);border:none;background:none;cursor:pointer;font-weight:600">Edit</button>
             <button onclick="deleteGallery(${it._idx})" style="color:red;border:none;background:none;cursor:pointer;font-weight:600">Hapus</button>
           </div>
         </div>
@@ -1312,26 +1455,30 @@
       </div>
     `;
     document.body.appendChild(galleryModal);
-    window.openGalleryModal=function(mode,idx=null){
+    window.openGalleryModal=async function(mode,id=null){
       galleryModal.classList.add('open');
-      const data=getGallery();
+      const data=await getGallery();
       const form=document.getElementById('galleryForm');
       const pimg=document.getElementById('galPreviewImg');
       const warn=document.getElementById('galWarn');
       const posList=document.getElementById('positionsList');
-      if(posList){ posList.innerHTML = getPositions().map(p=>`<option value="${p}">`).join(''); }
-      if(mode==='edit'&&idx!==null){
-        const it=data[idx];
-        document.getElementById('galModalTitle').textContent='Edit Foto';
-        document.getElementById('galIndex').value=idx;
-        document.getElementById('galPosition').value=it.position||it.role||'';
-        document.getElementById('galName').value=it.name||'';
-        document.getElementById('galDesc').value=it.desc||'';
-        document.getElementById('galTenure').value=it.tenure||'';
-        document.getElementById('galOrder').value=it.order??0;
-        pimg.src=it.image||'';
-        pimg.style.display=it.image?'block':'none';
-        warn.textContent='';
+      const positions = await getPositions();
+      if(posList){ posList.innerHTML = positions.map(p=>`<option value="${p}">`).join(''); }
+      
+      if(mode==='edit'&&id!==null){
+        const it=data.find(d => d.id === id);
+        if(it) {
+            document.getElementById('galModalTitle').textContent='Edit Foto';
+            document.getElementById('galIndex').value=id;
+            document.getElementById('galPosition').value=it.position||it.role||'';
+            document.getElementById('galName').value=it.name||'';
+            document.getElementById('galDesc').value=it.desc||'';
+            document.getElementById('galTenure').value=it.tenure||'';
+            document.getElementById('galOrder').value=it.order??0;
+            pimg.src=it.image||'';
+            pimg.style.display=it.image?'block':'none';
+            warn.textContent='';
+        }
       }else{
         document.getElementById('galModalTitle').textContent='Tambah Foto';
         form.reset();
@@ -1344,36 +1491,51 @@
       }
     };
     window.closeGalleryModal=function(){ galleryModal.classList.remove('open'); };
-    window.editGallery=function(idx){ openGalleryModal('edit',idx); };
-    window.deleteGallery=function(idx){
+    window.editGallery=function(id){ openGalleryModal('edit',id); };
+    window.deleteGallery=async function(id){
       if(!confirm('Hapus foto ini?')) return;
-      const data=getGallery();
-      const del=data.splice(idx,1);
-      saveGallery(data);
-      window.AdminAuth.logActivity('DELETE_GALLERY', 'Menghapus foto: '+(del[0]?.name||''));
-      renderGallery();
+      let data=await getGallery();
+      const item=data.find(d => d.id === id);
+      data=data.filter(d => d.id !== id);
+      await saveGallery(data);
+      window.AdminAuth.logActivity('DELETE_GALLERY', 'Menghapus foto: '+(item?.name||''));
+      await renderGallery();
       renderAudit();
     };
-    window.moveUp=function(idx){
-      const data=getGallery();
-      if(idx<=0) return;
-      const t=data[idx-1];data[idx-1]=data[idx];data[idx]=t;
-      data.forEach((it,i)=>it.order=i);
-      saveGallery(data);
-      window.AdminAuth.logActivity('REORDER_GALLERY','Memindahkan ke atas');
-      renderGallery();
-      renderAudit();
+    window.moveGalleryItem = async function(id, direction) {
+        let data = await getGallery();
+        const cfg = await getGalleryCfg();
+        
+        const sorted = sortGalleryHelper(data, cfg);
+        const idx = sorted.findIndex(it => it.id === id);
+        
+        if (idx === -1) return;
+        if (direction === -1 && idx === 0) return;
+        if (direction === 1 && idx === sorted.length - 1) return;
+        
+        const targetIdx = idx + direction;
+        const itemA = sorted[idx];
+        const itemB = sorted[targetIdx];
+        
+        const orderA = itemA.order ?? idx;
+        const orderB = itemB.order ?? targetIdx;
+        
+        if (orderA === orderB) {
+            sorted.forEach((it, i) => it.order = i);
+            const t = sorted[idx].order;
+            sorted[idx].order = sorted[targetIdx].order;
+            sorted[targetIdx].order = t;
+        } else {
+            itemA.order = orderB;
+            itemB.order = orderA;
+        }
+        
+        await saveGallery(data);
+        window.AdminAuth.logActivity('REORDER_GALLERY', direction === -1 ? 'Memindahkan ke atas' : 'Memindahkan ke bawah');
+        await renderGallery();
+        renderAudit();
     };
-    window.moveDown=function(idx){
-      const data=getGallery();
-      if(idx>=data.length-1) return;
-      const t=data[idx+1];data[idx+1]=data[idx];data[idx]=t;
-      data.forEach((it,i)=>it.order=i);
-      saveGallery(data);
-      window.AdminAuth.logActivity('REORDER_GALLERY','Memindahkan ke bawah');
-      renderGallery();
-      renderAudit();
-    };
+
     document.getElementById('galImage').addEventListener('change',async(e)=>{
       const file=e.target.files&&e.target.files[0];
       const pimg=document.getElementById('galPreviewImg');
@@ -1394,9 +1556,9 @@
       };
       fr.readAsDataURL(file);
     });
-    document.getElementById('galleryForm').addEventListener('submit',(e)=>{
+    document.getElementById('galleryForm').addEventListener('submit',async (e)=>{
       e.preventDefault();
-      const idx=document.getElementById('galIndex').value;
+      const id=document.getElementById('galIndex').value;
       const position=document.getElementById('galPosition').value;
       const name=document.getElementById('galName').value;
       const desc=document.getElementById('galDesc').value;
@@ -1404,42 +1566,50 @@
       const order=parseInt(document.getElementById('galOrder').value||'0',10);
       const fileInput=document.getElementById('galImage');
       const posPersist=document.getElementById('posPersist').checked;
-      let data=getGallery();
+      
+      let data = await getGallery();
       let imageData=null;
+      
       if(fileInput.files&&fileInput.files[0]){
         const f=fileInput.files[0];
         const okTypes=['image/jpeg','image/png'];
         if(!okTypes.includes(f.type)){ alert('Hanya JPG atau PNG'); return; }
         if(f.size>2*1024*1024){ alert('Ukuran maksimal 2MB'); return; }
       }
-      function finalizeSave(){
+      
+      const finalizeSave = async () => {
         if(posPersist && position){
-          const list=getPositions();
+          let list = await getPositions();
           if(!list.map(s=>s.toLowerCase()).includes(position.toLowerCase())){
             list.push(position);
-            savePositions(list);
+            await savePositions(list);
           }
         }
-        if(idx!==''){
-          const item=data[idx];
-          data[idx]={...item,position,name,desc,tenure,order,image:imageData!==null?imageData:item.image};
-          window.AdminAuth.logActivity('EDIT_GALLERY','Mengedit foto: '+name);
-        }else{
-          const id=Date.now().toString(36)+Math.random().toString(36).substr(2);
-          data.push({id,ts:new Date().toISOString(),position,name,desc,tenure,order,image:imageData});
+        
+        if(id){
+          const idx = data.findIndex(it => it.id === id);
+          if (idx !== -1) {
+              data[idx] = {...data[idx], position, name, desc, tenure, order, image: imageData!==null?imageData:data[idx].image};
+              window.AdminAuth.logActivity('EDIT_GALLERY','Mengedit foto: '+name);
+          }
+        } else {
+          const newId=Date.now().toString(36)+Math.random().toString(36).substr(2);
+          data.push({id: newId, ts:new Date().toISOString(), position, name, desc, tenure, order, image: imageData});
           window.AdminAuth.logActivity('ADD_GALLERY','Menambah foto: '+name);
         }
-        saveGallery(data);
+        
+        await saveGallery(data);
         closeGalleryModal();
-        renderGallery();
+        await renderGallery();
         renderAudit();
-      }
+      };
+      
       if(fileInput.files&&fileInput.files[0]){
         const fr=new FileReader();
         fr.onload=()=>{ imageData=fr.result; finalizeSave(); };
         fr.readAsDataURL(fileInput.files[0]);
       }else{
-        finalizeSave();
+        await finalizeSave();
       }
     });
     function onConfirm(msg, cb){
@@ -1448,39 +1618,40 @@
     document.getElementById('confirmGalleryBtn').addEventListener('click',()=>{
       onConfirm('Simpan perubahan galeri?', ()=> document.getElementById('galleryForm').requestSubmit());
     });
-    document.getElementById('saveIntervalBtn').addEventListener('click',()=>{
+    document.getElementById('saveIntervalBtn').addEventListener('click', async ()=>{
       const v=parseInt(document.getElementById('galInterval').value||'2500',10);
       const ms=isNaN(v)?2500:v;
-      saveGalleryCfg({interval_ms: Math.max(1000, ms)});
+      let cfg = await getGalleryCfg();
+      cfg.interval_ms = Math.max(1000, ms);
+      await saveGalleryCfg(cfg);
       window.AdminAuth.logActivity('CFG_GALLERY','Mengubah interval ke '+Math.max(1000,ms)+' ms');
       alert('Interval disimpan.');
     });
-    document.getElementById('saveAnimBtn').addEventListener('click',()=>{
+    document.getElementById('saveAnimBtn').addEventListener('click', async ()=>{
       const v=parseInt(document.getElementById('galAnimMs').value||'500',10);
       const ms=isNaN(v)?500:v;
-      const cfg=getGalleryCfg();
-      saveGalleryCfg({interval_ms: cfg.interval_ms||2500, animation_ms: Math.max(100, ms), priority_order: cfg.priority_order||['Camat','Wakil Camat']});
+      let cfg = await getGalleryCfg();
+      cfg.animation_ms = Math.max(100, ms);
+      await saveGalleryCfg(cfg);
       window.AdminAuth.logActivity('CFG_GALLERY','Mengubah durasi animasi ke '+Math.max(100,ms)+' ms');
       alert('Animasi disimpan.');
     });
 
-    window.deleteItem = function(id) {
+    window.deleteItem = async function(id) {
       if(!confirm('Hapus data ini?')) return;
-      let data = JSON.parse(localStorage.getItem('bedas_submissions') || '[]');
-      data = data.filter(d => d.id !== id);
-      localStorage.setItem('bedas_submissions', JSON.stringify(data));
+      await window.BedasDB.delete('submissions', id);
       window.AdminAuth.logActivity('DELETE_DATA', `Menghapus submission ID: ${id}`);
-      renderSubmissions();
+      await renderSubmissions();
       renderAudit();
     };
 
-    document.getElementById('clearDataBtn').addEventListener('click', () => {
+    document.getElementById('clearDataBtn').addEventListener('click', async () => {
       if(confirm('PERINGATAN: Hapus SEMUA data?')) {
-        localStorage.removeItem('bedas_submissions');
+        await window.BedasDB.deleteAll('submissions');
         window.AdminAuth.logActivity('CLEAR_ALL', 'Menghapus seluruh database submission');
-        renderSubmissions();
+        await renderSubmissions();
         renderAudit();
-        renderStats();
+        await renderStats();
       }
     });
 
@@ -1493,29 +1664,36 @@
     document.getElementById('fltText').addEventListener('input', renderSubmissions);
 
     // Initial Load
-    renderSubmissions();
-    renderAudit();
-    renderStats();
+    (async () => {
+        if(window.BedasDB) await window.BedasDB.init();
+        await renderSubmissions();
+        renderAudit();
+        await renderStats();
+        
+        // Ensure data exists before rendering (Featured)
+        let featured = await window.BedasDB.getFeatured();
+        if (featured.length === 0) {
+            const defaultServices = [
+                { id: '1', icon: '🤖', title: 'Asisten Virtual', desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.' },
+                { id: '2', icon: '📄', title: 'Database Layanan Lengkap', desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.' },
+                { id: '3', icon: '📱', title: 'Terintegrasi WhatsApp', desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.' }
+            ];
+            await window.BedasDB.saveFeatured(defaultServices);
+        }
+        
+        // Ensure data exists (Popular)
+        let popular = await window.BedasDB.getPopular();
+        if (popular.length === 0) {
+            const defaultPopular = [
+                { id: '1', icon: 'images/ikon/ktp.svg', title: 'Pembuatan & Perubahan KTP' },
+                { id: '2', icon: 'images/ikon/kk.svg', title: 'Perubahan Data KK' },
+                { id: '3', icon: 'images/ikon/akta.svg', title: 'Akta Kelahiran' },
+                { id: '4', icon: 'images/ikon/domisili.svg', title: 'Surat Pindah Datang / Keluar' }
+            ];
+            await window.BedasDB.savePopular(defaultPopular);
+        }
 
-    // Ensure data exists before rendering
-    if (!localStorage.getItem('bedas_featured_services')) {
-        const defaultServices = [
-            { id: '1', icon: '🤖', title: 'Asisten Virtual', desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.' },
-            { id: '2', icon: '📄', title: 'Database Layanan Lengkap', desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.' },
-            { id: '3', icon: '📱', title: 'Terintegrasi WhatsApp', desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.' }
-        ];
-        localStorage.setItem('bedas_featured_services', JSON.stringify(defaultServices));
-    }
-
-    if (!localStorage.getItem('bedas_popular_services')) {
-        const defaultPopular = [
-            { id: '1', icon: 'images/ikon/ktp.svg', title: 'Pembuatan & Perubahan KTP' },
-            { id: '2', icon: 'images/ikon/kk.svg', title: 'Perubahan Data KK' },
-            { id: '3', icon: 'images/ikon/akta.svg', title: 'Akta Kelahiran' },
-            { id: '4', icon: 'images/ikon/domisili.svg', title: 'Surat Pindah Datang / Keluar' }
-        ];
-        localStorage.setItem('bedas_popular_services', JSON.stringify(defaultPopular));
-    }
+    })();
 
     // --- Popular Services Logic ---
     const popularIconsList = [
@@ -1540,11 +1718,11 @@
       if(b) b.style.display = 'none';
     }
 
-    window.renderPopular = function() {
+    window.renderPopular = async function() {
         const rowsEl = document.getElementById('popularRows');
         if(!rowsEl) return;
         let data = [];
-        try { data = JSON.parse(localStorage.getItem('bedas_popular_services') || '[]'); } catch(e){}
+        try { data = await window.BedasDB.getPopular(); } catch(e){}
         
         if (data.length === 0) {
             rowsEl.innerHTML = '<div style="padding:20px;text-align:center;grid-column:1/-1">Belum ada data. Klik Reset Default.</div>';
@@ -1563,7 +1741,7 @@
         `).join('');
     }
 
-    window.openPopularModal = function(mode, id) {
+    window.openPopularModal = async function(mode, id) {
         document.getElementById('popularModal').classList.add('open');
         const form = document.getElementById('popularForm');
         form.reset();
@@ -1576,7 +1754,7 @@
             document.getElementById('popModalTitle').textContent = 'Edit Layanan Populer';
             document.getElementById('popId').value = id;
             
-            let data = JSON.parse(localStorage.getItem('bedas_popular_services') || '[]');
+            let data = await window.BedasDB.getPopular();
             const item = data.find(d => d.id === id);
             if (item) {
                 document.getElementById('popIcon').value = item.icon;
@@ -1609,15 +1787,15 @@
         document.getElementById('popularModal').classList.remove('open');
     }
 
-    document.getElementById('popularForm').addEventListener('submit', (e) => {
+    document.getElementById('popularForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('popId').value;
         const iconGridValue = document.getElementById('popIcon').value;
         const title = document.getElementById('popTitle').value;
         const fileInput = document.getElementById('popIconFile');
 
-        const saveLogic = (finalIcon) => {
-            let data = JSON.parse(localStorage.getItem('bedas_popular_services') || '[]');
+        const saveLogic = async (finalIcon) => {
+            let data = await window.BedasDB.getPopular();
 
             if (id) {
                 const idx = data.findIndex(d => d.id === id);
@@ -1635,8 +1813,8 @@
                 window.AdminAuth.logActivity('ADD_POPULAR', `Menambah layanan populer: ${title}`);
             }
 
-            localStorage.setItem('bedas_popular_services', JSON.stringify(data));
-            window.renderPopular();
+            await window.BedasDB.savePopular(data);
+            await window.renderPopular();
             window.closePopularModal();
         };
 
@@ -1647,7 +1825,7 @@
             };
             reader.readAsDataURL(fileInput.files[0]);
         } else {
-            saveLogic(iconGridValue);
+            await saveLogic(iconGridValue);
         }
     });
 
@@ -1671,18 +1849,18 @@
         });
     }
 
-    window.deletePopular = function(id) {
+    window.deletePopular = async function(id) {
         if(!confirm('Hapus layanan populer ini?')) return;
-        let data = JSON.parse(localStorage.getItem('bedas_popular_services') || '[]');
+        let data = await window.BedasDB.getPopular();
         const item = data.find(d => d.id === id);
         data = data.filter(d => d.id !== id);
-        localStorage.setItem('bedas_popular_services', JSON.stringify(data));
+        await window.BedasDB.savePopular(data);
         window.AdminAuth.logActivity('DELETE_POPULAR', `Menghapus layanan populer: ${item ? item.title : id}`);
-        renderPopular();
+        await renderPopular();
         renderAudit();
     };
 
-    window.resetPopularDefault = function() {
+    window.resetPopularDefault = async function() {
         if(!confirm('Reset ke default (4 layanan awal)?')) return;
         const defaultPopular = [
             { id: '1', icon: 'images/ikon/ktp.svg', title: 'Pembuatan & Perubahan KTP' },
@@ -1690,18 +1868,18 @@
             { id: '3', icon: 'images/ikon/akta.svg', title: 'Akta Kelahiran' },
             { id: '4', icon: 'images/ikon/domisili.svg', title: 'Surat Pindah Datang / Keluar' }
         ];
-        localStorage.setItem('bedas_popular_services', JSON.stringify(defaultPopular));
+        await window.BedasDB.savePopular(defaultPopular);
         window.AdminAuth.logActivity('RESET_POPULAR', 'Reset layanan populer ke default');
-        renderPopular();
+        await renderPopular();
         renderAudit();
     };
 
     // --- Featured Services Logic ---
-    window.renderFeatured = function() {
+    window.renderFeatured = async function() {
         const rowsEl = document.getElementById('featuredRows');
         if(!rowsEl) return;
         let data = [];
-        try { data = JSON.parse(localStorage.getItem('bedas_featured_services') || '[]'); } catch(e){}
+        try { data = await window.BedasDB.getFeatured(); } catch(e){}
         
         if (data.length === 0) {
             rowsEl.innerHTML = '<div style="padding:20px;text-align:center;grid-column:1/-1">Belum ada data. Klik Reset Default.</div>';
@@ -1725,7 +1903,7 @@
         `).join('');
     }
 
-    window.openFeaturedModal = function(mode, id) {
+    window.openFeaturedModal = async function(mode, id) {
         document.getElementById('featuredModal').classList.add('open');
         const form = document.getElementById('featuredForm');
         form.reset();
@@ -1735,7 +1913,7 @@
             document.getElementById('featModalTitle').textContent = 'Edit Layanan Unggulan';
             document.getElementById('featId').value = id;
             
-            let data = JSON.parse(localStorage.getItem('bedas_featured_services') || '[]');
+            let data = await window.BedasDB.getFeatured();
             const item = data.find(d => d.id === id);
             if (item) {
                 document.getElementById('featIcon').value = item.icon;
@@ -1752,7 +1930,7 @@
         document.getElementById('featuredModal').classList.remove('open');
     }
 
-    document.getElementById('featuredForm').addEventListener('submit', (e) => {
+    document.getElementById('featuredForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('featId').value;
         const iconText = document.getElementById('featIcon').value;
@@ -1761,8 +1939,8 @@
         const desc = document.getElementById('featDesc').value;
 
         // Helper to save data
-        const saveToStorage = (finalIcon) => {
-            let data = JSON.parse(localStorage.getItem('bedas_featured_services') || '[]');
+        const saveToStorage = async (finalIcon) => {
+            let data = await window.BedasDB.getFeatured();
             if (id) {
                 const idx = data.findIndex(d => d.id === id);
                 if (idx !== -1) {
@@ -1777,9 +1955,9 @@
                 data.push(newItem);
                 window.AdminAuth.logActivity('ADD_FEATURED', `Menambah layanan unggulan: ${title}`);
             }
-            localStorage.setItem('bedas_featured_services', JSON.stringify(data));
+            await window.BedasDB.saveFeatured(data);
             closeFeaturedModal();
-            renderFeatured();
+            await renderFeatured();
             renderAudit();
         };
 
@@ -1790,33 +1968,33 @@
             };
             reader.readAsDataURL(iconFile);
         } else if (iconText) {
-            saveToStorage(iconText);
+            await saveToStorage(iconText);
         } else {
             alert('Harap isi Icon (Emoji/URL) atau upload gambar!');
         }
     });
 
-    window.deleteFeatured = function(id) {
+    window.deleteFeatured = async function(id) {
         if(!confirm('Hapus layanan unggulan ini?')) return;
-        let data = JSON.parse(localStorage.getItem('bedas_featured_services') || '[]');
+        let data = await window.BedasDB.getFeatured();
         const item = data.find(d => d.id === id);
         data = data.filter(d => d.id !== id);
-        localStorage.setItem('bedas_featured_services', JSON.stringify(data));
+        await window.BedasDB.saveFeatured(data);
         window.AdminAuth.logActivity('DELETE_FEATURED', `Menghapus layanan unggulan: ${item ? item.title : id}`);
-        renderFeatured();
+        await renderFeatured();
         renderAudit();
     };
 
-    window.resetFeaturedDefault = function() {
+    window.resetFeaturedDefault = async function() {
         if(!confirm('Reset ke default (3 layanan awal)?')) return;
         const defaultServices = [
             { id: '1', icon: '🤖', title: 'Asisten Virtual', desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.' },
             { id: '2', icon: '📄', title: 'Database Layanan Lengkap', desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.' },
             { id: '3', icon: '📱', title: 'Terintegrasi WhatsApp', desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.' }
         ];
-        localStorage.setItem('bedas_featured_services', JSON.stringify(defaultServices));
+        await window.BedasDB.saveFeatured(defaultServices);
         window.AdminAuth.logActivity('RESET_FEATURED', 'Reset layanan unggulan ke default');
-        renderFeatured();
+        await renderFeatured();
         renderAudit();
     };
     

@@ -9,6 +9,14 @@
     <link rel="apple-touch-icon" href="images/ikon.png">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase & BedasDB -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="db-service.js"></script>
+    
     <style>
         /* Mobile specific adjustments */
         @media (max-width: 480px) {
@@ -1195,11 +1203,41 @@
                 ts: new Date().toISOString(),
                 source: 'chat.html'
             };
-            submissions.push(payload);
-            saveSubmissions(submissions);
+            
+            try {
+                await BedasDB.addSubmission(payload);
+                await BedasDB.addStat({
+                    id: Date.now().toString(36)+Math.random().toString(36).substr(2),
+                    ref_id: payload.id,
+                    ts: payload.ts,
+                    nama: payload.nama,
+                    hp: payload.hp,
+                    email: payload.email||'',
+                    alamat: payload.alamat||'',
+                    layanan: payload.layanan||'',
+                    pesan: payload.pesan||'',
+                    source: payload.source||''
+                });
+
+                // Update local history cache for user view (so user sees their history even if DB is cloud)
+                const currentLS = loadSubmissions();
+                if (!currentLS.find(x => x.id === payload.id)) {
+                    currentLS.push(payload);
+                    saveSubmissions(currentLS);
+                }
+                submissions = currentLS;
+
+                recordSubmissionStatus(payload.id, 'confirmed', 'Tersimpan');
+            } catch (e) {
+                console.error('Submission failed', e);
+                // Fallback to local only if BedasDB throws
+                submissions.push(payload);
+                saveSubmissions(submissions);
+                recordSubmissionStatus(payload.id, 'confirmed', 'Tersimpan lokal (Offline)');
+            }
+
             try{ localStorage.setItem('bedas_last_submitted_payload', JSON.stringify(payload)); }catch(e){}
-            recordSubmissionStatus(payload.id, 'confirmed', 'Tersimpan lokal');
-            appendPermanentStats(payload);
+            // appendPermanentStats(payload); // Handled by BedasDB.addStat
             localStorage.setItem('bedas_onboarding_done','true');
             localStorage.setItem('bedas_last_submission_ts', String(now)); // Record timestamp
             
@@ -1306,47 +1344,47 @@
         const chatBox = document.getElementById('chatBox');
         
         // --- 2. Database Logic ---
-        function initServiceDB() {
+        async function initServiceDB() {
             try {
-                // Try load from LocalStorage
-                const stored = localStorage.getItem('bedas_services_db');
-                if (stored) {
-                    services = JSON.parse(stored);
-                    
-                    // --- SYNC SPECIFIC SERVICES FROM CODEBASE ---
-                    if (typeof defaultServices !== 'undefined') {
-                        // Fix for Layanan PERMOHONAN AHLI WARIS templates not showing if LS is stale
-                        const warisTitle = "Layanan PERMOHONAN AHLI WARIS";
-                        const warisDefault = defaultServices.find(s => s.title === warisTitle);
-                        const warisStored = services.find(s => s.title === warisTitle);
-                        
-                        if (warisDefault && warisStored) {
-                             // Force update templates and procedure from code
-                             warisStored.templates = warisDefault.templates;
-                             warisStored.procedure = warisDefault.procedure;
-                             saveServiceDB(); // Persist the fix
-                        }
-                    }
-                    // ---------------------------------------------
-
-                } else if (typeof defaultServices !== 'undefined') {
-                    // Seed from default if LS empty
-                    services = [...defaultServices];
-                    
+                // Use BedasDB to get services (online or local)
+                let data = await BedasDB.getServices();
+                
+                // If empty (first run or offline/empty), seed from defaultServices if available
+                if (data.length === 0 && typeof defaultServices !== 'undefined') {
+                    data = [...defaultServices];
                     // Migrate legacy if exists
                     try {
                         const legacy = JSON.parse(localStorage.getItem('bedas_extra_services') || '[]');
                         if (legacy.length > 0) {
-                            services = [...services, ...legacy];
+                            data = [...data, ...legacy];
                             localStorage.removeItem('bedas_extra_services');
                         }
                     } catch(e){}
                     
-                    saveServiceDB();
+                    // Save to BedasDB (syncs to Cloud if online)
+                    await BedasDB.saveServices(data);
                 } else {
-                    console.warn('No services found (LS empty & defaultServices undefined)');
-                    services = [];
+                     // Sync specific code updates
+                     if (typeof defaultServices !== 'undefined') {
+                        const warisTitle = "Layanan PERMOHONAN AHLI WARIS";
+                        const warisDefault = defaultServices.find(s => s.title === warisTitle);
+                        const warisStored = data.find(s => s.title === warisTitle);
+                        
+                        if (warisDefault && warisStored) {
+                             if (JSON.stringify(warisStored.templates) !== JSON.stringify(warisDefault.templates) ||
+                                 JSON.stringify(warisStored.procedure) !== JSON.stringify(warisDefault.procedure)) {
+                                 warisStored.templates = warisDefault.templates;
+                                 warisStored.procedure = warisDefault.procedure;
+                                 await BedasDB.saveServices(data);
+                             }
+                        }
+                     }
                 }
+                
+                services = data;
+                updateServiceCountDisplay();
+                refreshSuggestions();
+                
             } catch(e) {
                 console.error('Service DB Init Failed:', e);
                 // Fallback to default if available
@@ -1355,8 +1393,8 @@
             }
         }
 
-        function saveServiceDB() {
-            localStorage.setItem('bedas_services_db', JSON.stringify(services));
+        async function saveServiceDB() {
+            await BedasDB.saveServices(services);
         }
 
         function getAllServices() {
@@ -1826,7 +1864,7 @@
             `;
             document.querySelector('.messages-card')?.appendChild(cont);
             cont.querySelector('#admCancel').addEventListener('click', () => cont.remove());
-            cont.querySelector('#admSave').addEventListener('click', () => {
+            cont.querySelector('#admSave').addEventListener('click', async () => {
                 const newTitle = cont.querySelector('#admTitle').value.trim();
                 const newReq = cont.querySelector('#admReq').value.split('\n').map(s => s.trim()).filter(Boolean);
                 const all = getAllServices();
@@ -1834,7 +1872,9 @@
                 all[idx].requirements = newReq;
                 const selectedTplUrls = Array.from(cont.querySelectorAll('input[name="admTpl"]:checked')).map(el => el.value);
                 all[idx].templates = avTpl.filter(t => selectedTplUrls.includes(t.url));
-                localStorage.setItem('bedas_services_db', JSON.stringify(all));
+                
+                await saveServiceDB();
+
                 addMessage('<div style="color:#2e7d32;">✅ Layanan diperbarui.</div>', 'bot');
                 showDetail(all[idx]);
                 cont.remove();
@@ -1843,7 +1883,10 @@
 
     </script>
     <script>
-      initServiceDB(); // Initialize DB on load
+      document.addEventListener('DOMContentLoaded', async () => {
+          await BedasDB.init();
+          await initServiceDB(); // Initialize DB on load
+      });
 
       // Ensure suggestions are ready
       setTimeout(refreshSuggestions, 1000);
