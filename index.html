@@ -831,19 +831,35 @@
     start();
     window.addEventListener('storage',(e)=>{ if(e.key==='bedas_gallery_db' || e.key==='bedas_gallery_cfg'){ start(); } });
   })();
-  (function(){
+  (async function(){
     const viewport=document.querySelector('.gallery-viewport');
     const track=document.querySelector('.gallery-track');
     if(!viewport||!track) return;
+    
+    // Ensure BedasDB is initialized
+    if(window.BedasDB && !window.BedasDB.initialized) await window.BedasDB.init();
+
     // Optional: check admin session to show inline edit links
     const isAdmin = !!(window.AdminAuth && window.AdminAuth.checkSession && window.AdminAuth.checkSession());
-    function getGallery(){
-      try{const d=localStorage.getItem('bedas_gallery_db');if(d)return JSON.parse(d);return [];}catch(e){return [];}
+
+    async function getGallery(){
+      try{
+        if(window.BedasDB) return await window.BedasDB.getGallery();
+        const d=localStorage.getItem('bedas_gallery_db');
+        if(d)return JSON.parse(d);
+        return [];
+      }catch(e){return [];}
     }
-    function getGalleryCfg(){
-      try{const d=localStorage.getItem('bedas_gallery_cfg');if(d)return JSON.parse(d);return {interval_ms:2500};}catch(e){return {interval_ms:2500};}
+    async function getGalleryCfg(){
+      try{
+        if(window.BedasDB) return await window.BedasDB.getGalleryCfg();
+        const d=localStorage.getItem('bedas_gallery_cfg');
+        if(d)return JSON.parse(d);
+        return {interval_ms:2500};
+      }catch(e){return {interval_ms:2500};}
     }
-    const data=getGallery();
+
+    const data=await getGallery();
     if(!data.length) return;
     const roleOrder={Camat:0,'Wakil Camat':1,Anggota:2};
     const sorted=data.slice().sort((a,b)=>{
@@ -900,8 +916,10 @@
     let current=1;
     let slideW=0;
     let timer=null;
-    const cfg=getGalleryCfg();
+    
+    const cfg=await getGalleryCfg();
     const intervalMs = Math.max(1000, parseInt(cfg.interval_ms||2500,10));
+    
     function setSizes(){
       slideW=Math.floor(viewport.clientWidth);
       Array.from(track.children).forEach(s=>{ s.style.width=slideW+'px'; });
@@ -1121,7 +1139,7 @@
     startAuto();
     }
   })();
-  ;(function(){
+  ;(async function(){
     const viewport = document.querySelector('.slogan-viewport[data-group="komitmen"]');
     const track = document.querySelector('.slogan-track[data-group="komitmen"]');
     if(!viewport || !track) return;
@@ -1137,8 +1155,16 @@
         ];
         let data = [];
         try {
-            const stored = localStorage.getItem('bedas_komitmen_db');
-            if (stored) data = JSON.parse(stored);
+             // Use BedasDB
+            if (window.BedasDB) {
+                 if(!window.BedasDB.initialized) await window.BedasDB.init();
+                 const dbData = await window.BedasDB.getKomitmen();
+                 if (dbData && dbData.length > 0) data = dbData;
+            }
+            if (data.length === 0) {
+                const stored = localStorage.getItem('bedas_komitmen_db');
+                if (stored) data = JSON.parse(stored);
+            }
         } catch (e) {}
         if (!data || !Array.isArray(data) || data.length === 0) data = defaultKomitmen;
 

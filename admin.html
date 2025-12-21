@@ -686,19 +686,30 @@
     document.getElementById('cancelBtn').addEventListener('click', closeModal);
     document.getElementById('addNewBtn').addEventListener('click', () => openModal('add'));
 
-    window.editItem = function(id) {
-      const data = JSON.parse(localStorage.getItem('bedas_submissions') || '[]');
-      const item = data.find(d => d.id === id);
-      if (item) openModal('edit', item);
+    window.editItem = async function(id) {
+      try {
+        const data = await window.BedasDB.getSubmissions();
+        const item = data.find(d => d.id === id);
+        if (item) openModal('edit', item);
+      } catch(e) { console.error('Error fetching for edit:', e); }
     };
 
-    function appendPermanentStat(item){
+    async function appendPermanentStat(item){
       try {
-        const stats = JSON.parse(localStorage.getItem('bedas_submissions_stats') || '[]');
-        const rec = { id: Date.now().toString(36)+Math.random().toString(36).substr(2), ref_id: item.id, ts: item.ts, nama: item.nama, hp: item.hp, email: item.email||'', alamat: item.alamat||'', layanan: item.layanan||'', pesan: item.pesan||'', source: item.source||'' };
-        stats.push(rec);
-        localStorage.setItem('bedas_submissions_stats', JSON.stringify(stats));
-      } catch(e){}
+        const rec = { 
+          id: Date.now().toString(36)+Math.random().toString(36).substr(2), 
+          ref_id: item.id, 
+          ts: item.ts, 
+          nama: item.nama, 
+          hp: item.hp, 
+          email: item.email||'', 
+          alamat: item.alamat||'', 
+          layanan: item.layanan||'', 
+          pesan: item.pesan||'', 
+          source: item.source||'' 
+        };
+        await window.BedasDB.addStat(rec);
+      } catch(e){ console.error('Error adding stat:', e); }
     }
 
     form.addEventListener('submit', async (e) => {
