@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Peta Lokasi Kecamatan Dayeuhkolot</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-providers/1.13.0/leaflet-providers.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js" charset="utf-8"></script>
+    
+    <style>
+        /* Gaya Peta */
+        #map { 
+            height: 100vh; 
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* Loading Screen CSS */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #1a1a2e;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: #ff9a70;
+        }
+        
+        .loading-content h1 {
+            font-size: 2.5em;
+        }
+        
+        .loading-content p {
+            font-size: 1.1em;
+        }
+
+        .spinner {
+            border: 8px solid rgba(255, 255, 255, 0.1);
+            border-top: 8px solid #ff9a70;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Gaya Panel Detail */
+        #detail-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            width: 0;
+            max-width: 400px;
+            background-color: #2c3e50;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            overflow-x: hidden;
+            transition: width 0.5s ease-in-out;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #detail-panel.active {
+            width: clamp(300px, 32vw, 420px);
+            padding: 12px 0;
+        }
+
+        @media (max-width: 768px) {
+            #detail-panel.active {
+                width: 100%;
+                max-width: none;
+                z-index: 1001; 
+            }
+        }
+
+        .panel-header {
+            padding: 0 20px 15px 20px;
+            color: #ecf0f1;
+            border-bottom: 1px solid #34495e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #ff9a70;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #ff9a70;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #f39c12;
+        }
+
+        #detail-content {
+            flex-grow: 1;
+            padding: 12px 12px 16px 12px;
+            color: #ecf0f1;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        #detail-content img {
+            width: 100%;
+            height: auto;
+            max-height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #detail-content p {
+            margin: 6px 0;
+            line-height: 1.4;
+            font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+        }
+        
+        #detail-content strong {
+            color: #ff9a70;
+        }
+
+        .route-btn-row{
+            display:flex; 
+            justify-content:center; 
+            align-items:center; 
+            margin-top: 10px;
+        }
+        .cta-detail-btn {
+            display: inline-block;
+            padding: 12px 18px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #fbd46d, #ff7f50);
+            color: #222;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 999px;
+            font-weight: 800;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.2s ease;
+            font-size: clamp(0.95rem, 2.2vw, 1.05rem);
+            box-shadow: 0 8px 18px rgba(244, 211, 94, 0.35);
+        }
+        .cta-detail-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 32px rgba(244, 211, 94, 0.5);
+            filter: brightness(0.95);
+        }
+        .cta-detail-btn:focus-visible {
+            outline: 3px solid rgba(244, 211, 94, 0.9);
+            outline-offset: 3px;
+        }
+
+        #default-message {
+            padding: 20px;
+            color: #bdc3c7;
+            text-align: center;
+            margin-top: 50px;
+        }
+        
+        .compact-info {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .mini-gallery {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .mini-gallery img {
+            width: 100%;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        /* Marker Customisasi */
+        .map-pin-icon { width: 28px; height: 28px; display: inline-block; filter: drop-shadow(0 1px 4px rgba(0,0,0,0.35)); cursor: pointer; }
+        .map-pin-icon.kecamatan-pin { opacity: 0.8; animation: pulse 1.5s ease-in-out infinite; transition: transform 0.2s ease, filter 0.2s ease; }
+        .map-pin-icon.kecamatan-pin:hover { filter: drop-shadow(0 6px 12px rgba(0,0,0,0.5)); transform: translateY(-2px); }
+
+        .marker-bounce-active {
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1002; 
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #toast.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+
+        @-webkit-keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @-webkit-keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+        /* Filter Panel */
+        #filter-panel-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 500;
+            background-color: #ff9a70;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s;
+        }
+
+        #filter-panel-toggle:hover {
+            background-color: #ff7f50;
+        }
+
+        #filter-panel {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            z-index: 500;
+            width: 280px;
+            background-color: rgba(44, 62, 80, 0.95);
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            display: none;
+        }
+
+        #filter-panel.active {
+            display: block;
+        }
+        .meta-panel { margin-top:10px; font-size:0.9em; color:#bdc3c7; }
+        .meta-panel b { color:#ff9a70; }
+        .neighbor-label div{ color:#ffffff; font-weight:700; background:linear-gradient(135deg,#0284c7,#22d3ee); padding:8px 12px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.25); border:2px solid rgba(0,0,0,0.25); text-shadow:0 1px 2px rgba(0,0,0,0.35); }
+        .leaflet-div-icon.neighbor-label{ width:auto !important; height:auto !important; background:transparent; border:none; overflow:visible; display:inline-block; }
+        .bubble-label .bubble{ color:#fff; font-weight:700; padding:10px 14px; border-radius:14px; box-shadow:0 6px 16px rgba(0,0,0,0.25); background:var(--bubble-bg,#3b82f6); position:relative; transition:transform .25s ease, box-shadow .25s ease, opacity .25s ease; white-space:nowrap; font-size:clamp(0.8rem,0.9vw,1rem); border:var(--bubble-border-width,2px) solid var(--bubble-border,#0f172a); background-clip:padding-box; text-shadow:0 1px 2px rgba(0,0,0,0.35); }
+        .bubble-label .bubble:hover{ transform:translateY(-2px) scale(1.03); box-shadow:0 10px 24px rgba(0,0,0,0.32); }
+        @keyframes bubbleBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        .bubble-label .bounce-in{ animation:bubbleBounce .9s ease-in-out 3; }
+        .bubble-label .bubble::after, .bubble-label .bubble::before{ content:""; position:absolute; width:0; height:0; }
+        .bubble-label .pointer-down::before{ top:calc(100% - 1px); left:22px; border-style:solid; border-width:0 10px 10px 10px; border-color:transparent transparent var(--bubble-border,#0f172a) transparent; }
+        .bubble-label .pointer-down::after{ top:100%; left:22px; border-style:solid; border-width:0 8px 8px 8px; border-color:transparent transparent var(--bubble-bg,#3b82f6) transparent; }
+        .bubble-label .pointer-up::before{ bottom:calc(100% - 1px); left:22px; border-style:solid; border-width:10px 10px 0 10px; border-color:var(--bubble-border,#0f172a) transparent transparent transparent; }
+        .bubble-label .pointer-up::after{ bottom:100%; left:22px; border-style:solid; border-width:8px 8px 0 8px; border-color:var(--bubble-bg,#3b82f6) transparent transparent transparent; }
+        .bubble-label .pointer-left::before{ top:calc(50% - 10px); right:-10px; border-style:solid; border-width:10px 10px 10px 0; border-color:transparent var(--bubble-border,#0f172a) transparent transparent; }
+        .bubble-label .pointer-left::after{ top:calc(50% - 8px); right:-8px; border-style:solid; border-width:8px 8px 8px 0; border-color:transparent var(--bubble-bg,#3b82f6) transparent transparent; }
+        .bubble-label .pointer-right::before{ top:calc(50% - 10px); left:-10px; border-style:solid; border-width:10px 0 10px 10px; border-color:transparent transparent transparent var(--bubble-border,#0f172a); }
+        .bubble-label .pointer-right::after{ top:calc(50% - 8px); left:-8px; border-style:solid; border-width:8px 0 8px 8px; border-color:transparent transparent transparent var(--bubble-bg,#3b82f6); }
+        .bubble-label .theme-north{ --bubble-bg:#ef4444; background:linear-gradient(135deg,#ef4444,#f59e0b); }
+        .bubble-label .theme-east{ --bubble-bg:#3b82f6; background:linear-gradient(135deg,#3b82f6,#06b6d4); }
+        .bubble-label .theme-south{ --bubble-bg:#10b981; background:linear-gradient(135deg,#10b981,#22c55e); }
+        .bubble-label .theme-west{ --bubble-bg:#8b5cf6; background:linear-gradient(135deg,#8b5cf6,#22d3ee); }
+        .leaflet-div-icon.bubble-label{ width:auto !important; height:auto !important; background:transparent; border:none; overflow:visible; display:inline-block; }
+        .neighbor-vert div{ writing-mode: vertical-rl; text-orientation: mixed; }
+        
+        .filter-group {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .filter-group h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #ff9a70;
+        }
+        
+        #search-input, select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #34495e;
+            background-color: #3e536b;
+            color: white;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        .radius-buttons button {
+            background-color: #3e536b;
+            color: white;
+            border: 1px solid #ff9a70;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .radius-buttons button:hover {
+            background-color: #ff9a70;
+        }
+
+        #kecamatan-count {
+            text-align: center;
+            font-size: 1.1em;
+            padding: 10px 0;
+            background: #3e536b;
+            border-radius: 4px;
+        }
+        
+        #return-home-btn {
+            position: absolute;
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 500;
+            background-color: #38c172; 
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s;
+            text-decoration: none; 
+            font-family: Arial, sans-serif; 
+            font-size: 1em; 
+        }
+
+        #return-home-btn:hover {
+            background-color: #2d995b;
+        }
+        
+        /* Legend & Help */
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 500;
+            background-color: rgba(44,62,80,0.95);
+            color: #ecf0f1;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            font-size: 0.9em;
+            max-width: 300px;
+        }
+        #legend h4 { margin: 0 0 8px 0; color:#ff9a70; }
+        #legend .item { display:flex; align-items:center; margin:6px 0; }
+        #legend .item svg { margin-right:8px; }
+        #help-toggle {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 500;
+            background-color: #3e536b;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #help-panel {
+            position: absolute;
+            bottom: 70px;
+            left: 20px;
+            z-index: 500;
+            background-color: rgba(44,62,80,0.95);
+            color: #ecf0f1;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            display:none;
+            max-width: 360px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h1>tunggu sebentar yaaa...</h1>
+            <p>Memuat Peta nih ...</p>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <button id="filter-panel-toggle">☰ Filter & Cari</button>
+    
+    <a id="return-home-btn" href="index.html">🏠 Home</a>
+    
+    <div id="legend">
+        <!-- Legend will be populated by JS -->
+    </div>
+    
+    <button id="help-toggle">❓ Petunjuk</button>
+    <div id="help-panel">
+        - Klik marker untuk melihat detail dan foto-foto<br/>
+        - Gunakan Filter untuk membatasi kategori dan radius<br/>
+        - Tombol lokasi di kiri bawah untuk mendeteksi posisi Anda<br/>
+        - Gunakan kontrol layer kanan atas untuk mengganti tampilan peta
+    </div>
+    
+    
+    <div id="filter-panel">
+        <div class="filter-group">
+            <h4>🔍 Cari Lokasi</h4>
+            <input type="text" id="search-input" placeholder="Nama Lokasi atau Alamat">
+        </div>
+        <div class="filter-group">
+            <h4>� Kategori</h4>
+            <select id="category-filter">
+                <option value="Semua">Semua Kategori</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <h4>📍 Jarak Radius</h4>
+            <div class="radius-buttons">
+                <button onclick="checkRadiusFilter(5)">5 KM</button>
+                <button onclick="checkRadiusFilter(10)">10 KM</button>
+                <button onclick="checkRadiusFilter(0)">Reset</button>
+            </div>
+        </div>
+        
+
+        <div class="filter-group meta-panel">
+            <h4>ℹ️ Info Kecamatan</h4>
+            <div>
+                <div><b>Luas:</b> 11 km²</div>
+                <div><b>Desa/Kelurahan:</b> Cangkuang Kulon, Cangkuang Wetan, Citeureup, Dayeuhkolot, Pasawahan, Sukapura</div>
+                <div><b>Batas:</b> Utara: Bojongloa Kidul & Regol (Kota Bandung) • Timur: Lengkong (Kota Bandung) & Baleendah • Selatan: Baleendah • Barat: Margahayu & Bojongloa Kidul (Kota Bandung)</div>
+            </div>
+        </div>
+
+        <p id="lapo-count" style="margin-top: 20px; font-weight: bold; color: #ff9a70;">Tersedia: 0 Lokasi</p>
+    </div>
+
+    <div id="detail-panel">
+        <div class="panel-header">
+            <h2>Detail Lokasi</h2>
+            <button class="close-btn" onclick="resetPanel()">✕</button>
+        </div>
+        
+        <div id="default-message">
+            <p>Klik salah satu Lapo pada peta untuk melihat detail lengkap, rating, dan menu andalan!</p>
+            <p>(Tekan tombol ESC untuk menutup panel ini)</p>
+        </div>
+
+        <div id="detail-content">
+            </div>
+    </div>
+
+    <div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+<script>
+    // --- VARIABEL GLOBAL ---
+    let map;
+    let markerClusterGroup;
+    let boundaryLayer = null;
+    let neighborLabels = [];
+    let allPlaces = [];
+    let activeMarker = null;
+    let userLocation = null; 
+    let radiusInMeters = null; 
+    let selectedMenu = 'Semua'; 
+    let selectedRating = 0; 
+    let radiusCircle = null; 
+    
+    // Definisikan Home Coordinates
+    const HOME_COORDS = [-6.955, 107.61];
+    const HOME_ZOOM = 12;
+
+    // --- FUNGSI UTAMA ---
+
+    function initMap() {
+        // Inisialisasi peta di pusat Jakarta
+        map = L.map('map', {
+            center: HOME_COORDS,
+            zoom: HOME_ZOOM,
+            zoomControl: false 
+        });
+
+        // 1. Definisikan Tema Peta (Tile Layers)
+        const openStreetMap = L.tileLayer.provider('OpenStreetMap.Mapnik'); 
+        const cartoLight = L.tileLayer.provider('CartoDB.Positron'); 
+        const cartoDark = L.tileLayer.provider('CartoDB.DarkMatter'); 
+        const esriSatelit = L.tileLayer.provider('Esri.WorldImagery');
+
+        // 2. Tambahkan Peta Default
+        openStreetMap.addTo(map); 
+
+        // 3. Buat Objek Base Layers untuk Kontrol
+        const baseLayers = {
+            "Standard (Terang)": openStreetMap,
+            "Minimalis (Terang)": cartoLight,
+            "Mode Gelap (Dark)": cartoDark,
+            "Satelit (Imagery)": esriSatelit
+        };
+
+        // 4. Tambahkan Kontrol Lapisan Peta di kanan atas
+        L.control.layers(baseLayers, null, { collapsed: true, position: 'topright' }).addTo(map);
+
+        // Tambahkan Zoom Control di kiri bawah
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+        // Tambahkan Locate Control (Tombol Lokasi) di kiri bawah
+        // FIX: Meningkatkan timeout menjadi 30 detik (30000ms) untuk mencegah error timeout
+        L.control.locate({
+            position: 'bottomleft',
+            strings: {
+                title: "Tunjukkan lokasi saya"
+            },
+            flyTo: false,
+            locateOptions: {
+                enableHighAccuracy: true,
+                timeout: 30000, 
+                maximumAge: 10000
+            }
+        }).addTo(map);
+        
+        // EVENT LISTENER GLOBAL UNTUK KONSISTENSI FILTER
+        map.on('locationfound', function(e) {
+            userLocation = e.latlng;
+            console.log("Lokasi Pengguna berhasil disimpan.");
+            applyFilters(); 
+        });
+
+        map.on('locationerror', function(e) {
+            console.error("Gagal mendapatkan lokasi: " + e.message);
+            // Jangan spam alert jika hanya gagal pasif
+        });
+
+        markerClusterGroup = L.layerGroup();
+        map.addLayer(markerClusterGroup);
+    }
+    
+    // --- FUNGSI MATEMATIKA: calculateDistance (Manual, tanpa Geolib) ---
+    function calculateDistance(coord1, coord2) {
+        const R = 6371e3; // Jari-jari bumi dalam meter
+        const lat1 = coord1.latitude * Math.PI / 180;
+        const lat2 = coord2.latitude * Math.PI / 180;
+        const deltaLat = (coord2.latitude - coord1.latitude) * Math.PI / 180;
+        const deltaLng = (coord2.longitude - coord1.longitude) * Math.PI / 180;
+
+        const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+                  Math.cos(lat1) * Math.cos(lat2) *
+                  Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+        
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const d = R * c; // Jarak dalam meter
+        return d;
+    }
+
+    function applyFilters() {
+        let filtered = allPlaces;
+        let count = 0;
+        const searchTerm = $('#search-input').val().toLowerCase();
+        const cat = $('#category-filter').val();
+        if (searchTerm) {
+            filtered = filtered.filter(p => {
+                const name = p.name ? p.name.toLowerCase() : '';
+                const address = p.address ? p.address.toLowerCase() : '';
+                return name.includes(searchTerm) || address.includes(searchTerm);
+            });
+        }
+        if (cat && cat !== 'Semua') {
+            filtered = filtered.filter(p => (p.category || '').toLowerCase() === cat.toLowerCase());
+        }
+        if (radiusInMeters > 0 && userLocation) {
+            filtered = filtered.filter(p => {
+                const distance = calculateDistance(
+                    { latitude: userLocation.lat, longitude: userLocation.lng },
+                    { latitude: p.lat, longitude: p.lng }
+                );
+                return distance <= radiusInMeters;
+            });
+        }
+        addMarkersToMap(filtered);
+        count = filtered.length;
+        $('#lapo-count').text(`Tersedia: ${count} Lokasi`);
+        if (radiusInMeters === null) { showToast(`Filter diterapkan: ${count} lokasi tersedia.`, 3000); }
+    }
+
+        function enrichData(data) {
+        return (data.places || []).map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category,
+            address: p.address,
+            lat: p.lat,
+            lng: p.lng,
+            google_place_id: p.google_place_id,
+            maps_url: p.maps_url,
+            hours: p.hours || '',
+            contacts: p.contacts || {},
+            facilities: p.facilities || {},
+            services: p.services || [],
+            image_url: p.image_url || '',
+            images: p.images || [],
+            description: p.description || ''
+        }));
+        }
+    function computeBoundsPolygon(arr){
+        let minLat=90, maxLat=-90, minLng=180, maxLng=-180;
+        arr.forEach(p=>{ if(p.lat<minLat) minLat=p.lat; if(p.lat>maxLat) maxLat=p.lat; if(p.lng<minLng) minLng=p.lng; if(p.lng>maxLng) maxLng=p.lng; });
+        const latPad=(maxLat-minLat)*0.05||0.005;
+        const lngPad=(maxLng-minLng)*0.05||0.005;
+        minLat-=latPad; maxLat+=latPad; minLng-=lngPad; maxLng+=lngPad;
+        return [
+            [minLat, minLng],
+            [minLat, maxLng],
+            [maxLat, maxLng],
+            [maxLat, minLng],
+            [minLat, minLng]
+        ];
+    }
+    function clearNeighborLabels(){ neighborLabels.forEach(m=>map.removeLayer(m)); neighborLabels=[]; }
+    function drawNeighborLabels(){
+        if(!boundaryLayer) return;
+        clearNeighborLabels();
+        const b = boundaryLayer.getBounds();
+        const north = [(b.getNorth() + (b.getNorth() - b.getSouth())*0.02), (b.getWest()+b.getEast())/2];
+        const south = [(b.getSouth() - (b.getNorth() - b.getSouth())*0.02), (b.getWest()+b.getEast())/2];
+        const west  = [(b.getSouth()+b.getNorth())/2, (b.getWest() - (b.getEast()-b.getWest())*0.02)];
+        const east  = [(b.getSouth()+b.getNorth())/2, (b.getEast() + (b.getEast()-b.getWest())*0.02)];
+        const mk = (latlng, txt, pointer, theme) => L.marker(latlng, { icon: L.divIcon({ className: 'bubble-label', html: `<div class="bubble ${pointer} ${theme} bounce-in">${txt}</div>`, iconSize: null }) });
+        neighborLabels.push(mk(north, 'Bojongloa Kidul • Regol (Kota Bandung)', 'pointer-down', 'theme-north'));
+        neighborLabels.push(mk(east, 'Lengkong (Kota Bandung) • Baleendah', 'pointer-left', 'theme-east'));
+        neighborLabels.push(mk(south, 'Baleendah', 'pointer-up', 'theme-south'));
+        neighborLabels.push(mk(west, 'Margahayu • Bojongloa Kidul (Kota Bandung)', 'pointer-right', 'theme-west'));
+        neighborLabels.forEach(m=>m.addTo(map));
+    }
+    function drawBoundaryFromPlaces(arr){
+        if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; }
+        if(!arr || arr.length<3) return;
+        const rect = computeBoundsPolygon(arr);
+        boundaryLayer = L.polygon(rect, { color:'#C2185B', weight:2, fillColor:'#F8BBD0', fillOpacity:0.25, dashArray:'4,4' });
+        boundaryLayer.addTo(map);
+        if(boundaryLayer.bringToBack) boundaryLayer.bringToBack();
+        map.fitBounds(boundaryLayer.getBounds(), { padding:[20,20] });
+        drawNeighborLabels();
+        /* solid fill only */
+    }
+    function isPlaceholderBoundary(geojson){
+        try{
+            const f = (geojson.features||[])[0];
+            if(!f) return false;
+            const coords = ((f.geometry||{}).coordinates||[[]])[0]||[];
+            if(coords.length<4) return false;
+            const lats = new Set(coords.map(c=>c[1].toFixed(6)));
+            const lngs = new Set(coords.map(c=>c[0].toFixed(6)));
+            return lats.size===2 && lngs.size===2;
+        }catch(e){ return false; }
+    }
+
+    function checkRadiusFilter(radiusKm) {
+        // --- Bagian Reset ---
+        if (radiusKm === 0) {
+            radiusInMeters = null; 
+            userLocation = null; 
+            if (radiusCircle) {
+                map.removeLayer(radiusCircle);
+                radiusCircle = null; 
+            }
+            applyFilters();
+            showToast("Filter radius direset.", 1500);
+            return;
+        }
+
+        // --- Bagian Radius Aktif ---
+        radiusInMeters = radiusKm * 1000; 
+
+        if (userLocation) {
+            // Jika lokasi sudah tersimpan
+            showToast(`Menggambar radius ${radiusKm} KM dari lokasi Anda...`, 2500);
+            updateRadiusCircle(userLocation);
+            applyFilters(); 
+        } else {
+            // Jika belum ada lokasi, cari GPS baru
+            showToast(`Mencari GPS untuk radius ${radiusKm} KM...`, 2500);
+
+            // FIX: Timeout dinaikkan ke 30 detik agar tidak mudah error
+            map.locate({
+                setView: false, 
+                maxZoom: 16,
+                timeout: 30000, 
+                enableHighAccuracy: true,
+                maximumAge: 10000
+            }); 
+
+            map.once('locationfound', function(e) {
+                userLocation = e.latlng;
+                updateRadiusCircle(userLocation);
+                applyFilters(); 
+            });
+            
+            map.once('locationerror', function(e) {
+                console.error("Location Error Details:", e);
+                // Pesan error lebih jelas untuk user
+                if(e.code === 3) {
+                     showToast("❌ Gagal mendapatkan lokasi (Timeout). Sinyal GPS lemah, coba di luar ruangan.", 5000);
+                } else {
+                     showToast("❌ Gagal mendapatkan lokasi. Pastikan GPS aktif dan diizinkan.", 5000);
+                }
+                
+                radiusInMeters = null; 
+                if (radiusCircle) {
+                    map.removeLayer(radiusCircle);
+                    radiusCircle = null;
+                }
+                applyFilters();
+            });
+        }
+    }
+    
+    function updateRadiusCircle(latlng) {
+        if (radiusCircle) {
+            map.removeLayer(radiusCircle);
+        }
+        radiusCircle = L.circle(latlng, {
+            radius: radiusInMeters,
+            color: '#ff9a70',
+            fillColor: '#ff9a70',
+            fillOpacity: 0.1,
+            className: 'radius-circle' 
+        }).addTo(map);
+        map.setView(latlng, 13);
+    }
+
+    function customIcon(p) {
+        const c = (p.category || '').toLowerCase();
+        let color = p.color;
+
+        if (!color) {
+            if (c === 'kantor_desa' || c === 'kantor_kelurahan') color = '#10B981';
+            else if (c === 'kantor_camat') color = '#0066CC';
+            else if (c === 'kantin_mbg') color = '#F59E0B';
+            else if (c === 'puskesmas') color = '#EF4444';
+            else color = '#0EA5E9';
+        }
+        
+        const isFood = c === 'kantin_mbg' && !p.color;
+        const isCamat = c === 'kantor_camat' && !p.color;
+        
+        const svg = isFood
+            ? `
+            <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2c3.3 0 6 2.7 6 6 0 5-6 12-6 12S6 13 6 8c0-3.3 2.7-6 6-6z" fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1"/>
+                <g transform="translate(6,6)" fill="#ffffff" stroke="#ffffff" stroke-width="0.6">
+                    <rect x="0.8" y="0.5" width="1.0" height="5.0" rx="0.4"></rect>
+                    <rect x="2.0" y="0.5" width="0.6" height="5.0" rx="0.3"></rect>
+                    <rect x="2.9" y="0.5" width="0.6" height="5.0" rx="0.3"></rect>
+                    <rect x="3.8" y="0.5" width="0.6" height="5.0" rx="0.3"></rect>
+                    <path d="M7.5,0.5 c1.2,0 2.2,1.0 2.2,2.2 v1.6 c0,1.2 -1.0,2.2 -2.2,2.2 h-0.7 v-6.0 h0.7z"></path>
+                </g>
+            </svg>`
+            : isCamat
+            ? `
+            <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#4da3ff"/>
+                        <stop offset="100%" stop-color="#0066CC"/>
+                    </linearGradient>
+                </defs>
+                <path d="M12 2c3.8 0 6.8 3 6.8 6.8 0 5.7-6.8 12.7-6.8 12.7S5.2 14.5 5.2 8.8C5.2 5 8.2 2 12 2z" fill="url(#grad)" opacity="0.8" stroke="rgba(0,0,0,0.35)" stroke-width="1"/>
+                <g transform="translate(6.5,6)" fill="#ffffff" opacity="0.95">
+                    <rect x="0.5" y="1.5" width="7" height="4.5" rx="0.6"></rect>
+                    <rect x="1.1" y="2.1" width="1.2" height="1.2" rx="0.2"></rect>
+                    <rect x="3.0" y="2.1" width="1.2" height="1.2" rx="0.2"></rect>
+                    <rect x="4.9" y="2.1" width="1.2" height="1.2" rx="0.2"></rect>
+                </g>
+            </svg>`
+            : `
+            <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2c3.3 0 6 2.7 6 6 0 5-6 12-6 12S6 13 6 8c0-3.3 2.7-6 6-6z" fill="${color}" stroke="rgba(0,0,0,0.35)" stroke-width="1"/>
+                <circle cx="12" cy="8.5" r="3" fill="#ffffff" opacity="0.85"/>
+            </svg>`;
+            
+        return L.divIcon({
+            className: 'map-pin-icon' + (isCamat ? ' kecamatan-pin' : ''),
+            html: svg,
+            iconSize: [28, 28],
+            iconAnchor: [14, 28]
+        });
+    }
+
+    function generateLegend() {
+        const legendEl = document.getElementById('legend');
+        legendEl.innerHTML = '<h4>Legenda</h4>';
+        
+        const catMap = new Map();
+        
+        allPlaces.forEach(p => {
+            const cat = p.category || 'lainnya';
+            // Format display name
+            let displayCat = cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            if (cat === 'kantin_mbg') displayCat = 'SPPG / Kantin MBG';
+            if (cat === 'kantor_desa') displayCat = 'Kantor Desa';
+            if (cat === 'kantor_kelurahan') displayCat = 'Kantor Kelurahan';
+            if (cat === 'kantor_camat') displayCat = 'Kantor Kecamatan';
+            
+            let color = p.color;
+            if (!color) {
+                 if (cat === 'kantor_desa' || cat === 'kantor_kelurahan') color = '#10B981';
+                else if (cat === 'kantor_camat') color = '#0066CC';
+                else if (cat === 'kantin_mbg') color = '#F59E0B';
+                else if (cat === 'puskesmas') color = '#EF4444';
+                else color = '#0EA5E9';
+            }
+            
+            // Store the first color encountered for this category
+            if (!catMap.has(cat)) {
+                catMap.set(cat, { name: displayCat, color: color });
+            }
+        });
+
+        catMap.forEach((val, key) => {
+            const item = document.createElement('div');
+            item.className = 'item';
+            item.innerHTML = `
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M12 2c3.3 0 6 2.7 6 6 0 5-6 12-6 12S6 13 6 8c0-3.3 2.7-6 6-6z" fill="${val.color}"/>
+                </svg>
+                <span>${val.name}</span>
+            `;
+            legendEl.appendChild(item);
+        });
+        
+        if (catMap.size === 0) legendEl.style.display = 'none';
+        else legendEl.style.display = 'block';
+    }
+
+    function addMarkersToMap(placeArray) {
+        markerClusterGroup.clearLayers();
+        placeArray.forEach(p => {
+            const marker = L.marker([p.lat, p.lng], {
+                icon: customIcon(p),
+                data: p
+            }).on('click', function() {
+                showDetail(this);
+            });
+            markerClusterGroup.addLayer(marker);
+        });
+    }
+    
+    // --- FUNGSI DETAIL DENGAN NAVIGASI & HITUNG JARAK ---
+    function showDetail(marker) {
+        if (activeMarker && activeMarker._icon) {
+            activeMarker._icon.classList.remove('marker-bounce-active');
+        }
+
+        activeMarker = marker;
+        if (activeMarker._icon) {
+             activeMarker._icon.classList.add('marker-bounce-active');
+        }
+
+        const data = marker.options.data;
+        const detailContent = $('#detail-content');
+        let imgTag = data.image_url ? `<img src="${data.image_url}" alt="Foto Lokasi" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/800x600?text=Foto+Lokasi';">` : '';
+        let gallery = '';
+        if (Array.isArray(data.images) && data.images.length > 0) {
+            gallery = `<div class="mini-gallery">` +
+                data.images.slice(0, 3).map(src => `<img src="${src}" alt="Foto" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/600x400?text=Foto';">`).join('') +
+                `</div>`;
+        }
+        const googleMapsUrl = data.google_place_id
+            ? `https://www.google.com/maps/dir/?api=1&destination_place_id=${data.google_place_id}`
+            : `https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}`;
+        
+        let distanceInfo = "";
+        if (userLocation) {
+            const distMeter = calculateDistance(
+                { latitude: userLocation.lat, longitude: userLocation.lng },
+                { latitude: data.lat, longitude: data.lng }
+            );
+            const distKm = (distMeter / 1000).toFixed(1); 
+            distanceInfo = `<p><strong>Jarak:</strong> ${distKm} KM dari posisi Anda</p>`;
+        } else {
+            distanceInfo = `<p style="color:#95a5a6;">(Aktifkan lokasi untuk melihat jarak)</p>`;
+        }
+
+        const coordsText = (typeof data.lat === 'number' && typeof data.lng === 'number') ? `${data.lat}, ${data.lng}` : '-';
+        const landmarkText = data.landmark || data.name || '-';
+        const infoBlock = `
+            <div class="compact-info">
+                <p><strong>Nama:</strong> ${data.name || '-'}</p>
+                <p><strong>Kategori:</strong> ${data.category || '-'}</p>
+                <p><strong>Deskripsi:</strong> ${data.description || '-'}</p>
+                <p><strong>Alamat:</strong> ${data.address || '-'}</p>
+                <p><strong>Koordinat:</strong> ${coordsText}</p>
+                <p><strong>Landmark:</strong> ${landmarkText}</p>
+                ${distanceInfo}
+            </div>
+        `;
+        detailContent.html(`
+            ${imgTag}
+            ${gallery}
+            ${infoBlock}
+            <div class="route-btn-row">
+                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" aria-label="Rute ke Lokasi di Google Maps" class="cta-detail-btn">🗺️ Rute ke Lokasi</a>
+            </div>
+        `);
+
+        $('#detail-panel').addClass('active');
+        $('#default-message').hide();
+        detailContent.show();
+
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 550); 
+    }
+
+    function resetPanel() {
+        $('#detail-panel').removeClass('active');
+        $('#default-message').show();
+        $('#detail-content').hide();
+        
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 550); 
+
+        if (activeMarker) {
+            if (activeMarker._icon) {
+                activeMarker._icon.classList.remove('marker-bounce-active');
+            }
+            activeMarker = null; 
+        }
+    }
+
+    function showToast(message, duration) {
+        const toast = $('#toast');
+        toast.text(message);
+        toast.addClass('show');
+        setTimeout(function(){ 
+            toast.removeClass('show'); 
+        }, duration);
+    }
+
+    // --- EVENT HANDLERS ---
+    
+    $('#category-filter').on('change', function() { applyFilters(); });
+
+    $('#search-input').on('keyup', function() {
+        clearTimeout($.data(this, 'timer'));
+        $(this).data('timer', setTimeout(applyFilters, 500));
+    });
+
+    $('#filter-panel-toggle').on('click', function() {
+        $('#filter-panel').toggleClass('active');
+    });
+    $('#help-toggle').on('click', function(){
+        $('#help-panel').toggle();
+    });
+    $('#backup-btn').on('click', async function(){
+        try{
+            const res = await fetch('dayeuhkolot_places.json');
+            const json = await res.json();
+            const blob = new Blob([JSON.stringify(json,null,2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'backup_dayeuhkolot_places.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Backup JSON diunduh.', 2000);
+        }catch(e){
+            showToast('Gagal membuat backup JSON.', 3000);
+        }
+    });
+    $('#ocr-btn').on('click', async function(){
+        try{
+            showToast('Memulai OCR gambar kantin...', 2500);
+            const imgs = [];
+            for(let i=1;i<=30;i++){
+                const url = `images/kantin/image${i}.jpg`;
+                const ok = await new Promise(resolve=>{
+                    const im = new Image();
+                    im.onload = ()=>resolve(true);
+                    im.onerror = ()=>resolve(false);
+                    im.src = url+'?ts='+Date.now();
+                });
+                if(ok) imgs.push(`images/kantin/image${i}.jpg`);
+            }
+            if(imgs.length===0){ showToast('Tidak ada gambar kantin ditemukan.', 3000); return; }
+            const out = [];
+            for(let idx=0; idx<imgs.length; idx++){
+                const url = imgs[idx];
+                const result = await Tesseract.recognize(url, 'ind', { logger: ()=>{} });
+                const text = (result && result.data && result.data.text ? result.data.text : '').replace(/\r/g,' ').replace(/\t/g,' ').replace(/[ ]{2,}/g,' ').trim();
+                const rec = { id:`kantin-${idx+1}`, name:'', category:'kantin_mbg', address:'', lat:null, lng:null, hours:'', contacts:{}, description:'', images:[url] };
+                const mCoord = text.match(/(-?\\d+\\.\\d+)\\s*,\\s*(\\d+\\.\\d+)/);
+                if(mCoord){ rec.lat=parseFloat(mCoord[1]); rec.lng=parseFloat(mCoord[2]); }
+                const mName = text.match(/Nama[^:]*:\\s*(.+)/i) || text.match(/Kantin[^:]*:\\s*(.+)/i) || text.match(/Warung[^:]*:\\s*(.+)/i);
+                if(mName){ rec.name=mName[1].trim(); }
+                const mAddr = text.match(/Alamat[^:]*:\\s*(.+)/i) || text.match(/Lokasi[^:]*:\\s*(.+)/i);
+                if(mAddr){ rec.address=mAddr[1].trim(); }
+                const mHours = text.match(/Jam[^:]*:\\s*([\\s\\S]*?)(?:Kontak|HP|WA|WhatsApp|Telepon|$)/i) || text.match(/Operasional[^:]*:\\s*([\\s\\S]*?)(?:Kontak|HP|WA|WhatsApp|Telepon|$)/i);
+                if(mHours){ rec.hours=mHours[1].replace(/\\n/g,' ').trim(); }
+                const mPhone = text.match(/(?:HP|WA|WhatsApp|Telepon)[^:]*:\s*([\d\s\-\+]{6,})/i);
+                if(mPhone){ rec.contacts.phone=mPhone[1].replace(/\\s+/g,'').trim(); }
+                const mDesc = text.match(/(?:Deskripsi|Keterangan)[^:]*:\\s*([\\s\\S]*?)(?:Nama|Alamat|Lokasi|Jam|Kontak|Kategori|$)/i);
+                if(mDesc){ rec.description=mDesc[1].replace(/\\n/g,' ').trim(); }
+                if(!rec.name) rec.name = `Kantin ${idx+1}`;
+                out.push(rec);
+            }
+            const blob = new Blob([JSON.stringify(out,null,2)], { type:'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.getElementById('ocr-download');
+            a.href = url;
+            a.download = 'ocr_kantin.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            const withCoords = out.filter(x=>typeof x.lat==='number' && typeof x.lng==='number');
+            if(withCoords.length>0){
+                allPlaces = allPlaces.concat(withCoords);
+                applyFilters();
+                showToast(`OCR selesai. ${withCoords.length} titik berkoordinat ditambahkan.`, 4000);
+            }else{
+                showToast('OCR selesai. Unduh JSON hasil untuk dilengkapi.', 4000);
+            }
+        }catch(e){
+            showToast('OCR gagal. Periksa koneksi atau gambar.', 4000);
+        }
+    });
+    $('#merge-btn').on('click', function(){
+        $('#merge-file').click();
+    });
+    $('#merge-file').on('change', async function(evt){
+        try{
+            const file = evt.target.files && evt.target.files[0];
+            if(!file){ return; }
+            const text = await file.text();
+            const arr = JSON.parse(text);
+            if(!Array.isArray(arr)){ showToast('File bukan array JSON.', 3000); return; }
+            const valid = arr.filter(x => x && typeof x.lat==='number' && typeof x.lng==='number' && x.category==='kantin_mbg');
+            if(valid.length===0){ showToast('Tidak ada entri berkoordinat untuk digabungkan.', 3000); return; }
+            allPlaces = allPlaces.concat(valid.map(p=>({
+                id: p.id || `kantin-${Date.now()}`,
+                name: p.name || 'Kantin',
+                category: 'kantin_mbg',
+                address: p.address || '',
+                lat: p.lat,
+                lng: p.lng,
+                google_place_id: p.google_place_id || '',
+                maps_url: p.maps_url || '',
+                hours: p.hours || '',
+                contacts: p.contacts || {},
+                facilities: p.facilities || {},
+                services: p.services || [],
+                image_url: p.image_url || '',
+                images: Array.isArray(p.images) ? p.images : [],
+                description: p.description || ''
+            })));
+            applyFilters();
+            const merged = {
+                version: '1.0.0',
+                last_updated: new Date().toISOString(),
+                area: 'Kecamatan Dayeuhkolot',
+                places: allPlaces
+            };
+            const blob = new Blob([JSON.stringify(merged,null,2)], { type:'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'merged_dayeuhkolot_places.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`Gabung sukses. ${valid.length} entri ditambahkan. File hasil diunduh.`, 4000);
+        }catch(e){
+            showToast('Gagal menggabungkan OCR ke JSON.', 4000);
+        }finally{
+            evt.target.value = '';
+        }
+    });
+
+    $(document).on('keydown', function(e) {
+        if (e.key === "Escape" || e.keyCode === 27) { 
+            if ($('#detail-panel').hasClass('active')) {
+                resetPanel();
+                showToast("Panel detail ditutup.", 1500);
+            }
+        }
+    });
+
+    // --- LOGIKA STARTUP MAP DAN DATA ---
+    $(document).ready(function() {
+        initMap();
+
+        $.getJSON("dayeuhkolot_places.json", function(data) {
+            allPlaces = enrichData(data);
+            const cats = new Set();
+            allPlaces.forEach(p => { if(p.category) cats.add(p.category); });
+            
+            const catNames = {
+                'kantor_desa': 'Kantor Desa',
+                'kantor_kelurahan': 'Kantor Kelurahan',
+                'kantor_camat': 'Kantor Kecamatan',
+                'kantin_mbg': 'SPPG / Kantin MBG'
+            };
+
+            const sel = $('#category-filter');
+            let options = '<option value="Semua">Semua Kategori</option>';
+            Array.from(cats).sort().forEach(c => {
+                let name = catNames[c] || c.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                options += `<option value="${c}">${name}</option>`;
+            });
+            sel.html(options);
+            if (allPlaces.length === 0) {
+                 showToast("⚠️ Data lokasi berhasil dimuat, tetapi kosong.", 5000);
+            } else {
+                 addMarkersToMap(allPlaces);
+                 $('#lapo-count').text(`Tersedia: ${allPlaces.length} Lokasi`);
+                 showToast(`✅ ${allPlaces.length} lokasi berhasil dimuat.`, 3000);
+                 generateLegend();
+                 $.getJSON('dayeuhkolot_boundary.geojson', function(g){
+                    try{
+                        if(isPlaceholderBoundary(g)){ drawBoundaryFromPlaces(allPlaces); }
+                        else{
+                            if(boundaryLayer){ map.removeLayer(boundaryLayer); boundaryLayer=null; }
+                            boundaryLayer = L.geoJSON(g, { style: { color:'#C2185B', weight:2, fillColor:'#F8BBD0', fillOpacity:0.35, dashArray:'4,4' } });
+                            boundaryLayer.addTo(map);
+                            if(boundaryLayer.bringToBack) boundaryLayer.bringToBack();
+                            map.fitBounds(boundaryLayer.getBounds(), { padding:[20,20] });
+                            drawNeighborLabels();
+                        }
+                    }catch(e){ drawBoundaryFromPlaces(allPlaces); }
+                 }).fail(function(){ drawBoundaryFromPlaces(allPlaces); });
+                map.invalidateSize();
+            }
+            
+            $('#loading-overlay').css('opacity', 0);
+            setTimeout(() => {
+                $('#loading-overlay').hide();
+            }, 500); 
+
+        }).fail(function(jqxhr, textStatus, error) {
+            var err = textStatus + ", " + error;
+            console.error("❌ Gagal memuat dayeuhkolot_places.json: " + err);
+            showToast("❌ GAGAL memuat data lokasi. Pastikan 'dayeuhkolot_places.json' ada.", 8000);
+            
+            $('#loading-overlay').css('opacity', 0);
+            setTimeout(() => {
+                $('#loading-overlay').hide();
+            }, 500); 
+        });
+    });
+</script>
+
+</body>
+</html>

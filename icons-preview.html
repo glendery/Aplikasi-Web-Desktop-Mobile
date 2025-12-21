@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview Ikon Layanan - Dayeuhkolot</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 40px; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { color: #1E3A8A; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 24px; margin-top: 30px; }
+        .card { border: 1px solid #eee; border-radius: 12px; padding: 20px; text-align: center; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        .icon-box { width: 80px; height: 80px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; }
+        .label { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; }
+        .filename { font-size: 11px; color: #888; font-family: monospace; background: #f5f5f5; padding: 4px 8px; border-radius: 4px; display: inline-block; }
+        .variants { display:flex; gap:8px; justify-content:center; margin-top:8px; }
+        .icon-wrap { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.15); }
+        .icon-wrap img { width:20px; height:20px; }
+        .palette-blue { background: linear-gradient(135deg,#A7C1FF,#1E3A8A); }
+        .palette-indigo { background: linear-gradient(135deg,#C7D2FF,#5B21B6); }
+        .palette-purple { background: linear-gradient(135deg,#E9D5FF,#7C3AED); }
+        .palette-green { background: linear-gradient(135deg,#A7F3D0,#047857); }
+        .palette-gold { background: linear-gradient(135deg,#FDE68A,#B45309); }
+        .btns { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
+        .btn { font-size:11px; padding:6px 8px; border:1px solid #1E3A8A; color:#1E3A8A; background:white; border-radius:6px; cursor:pointer; }
+        .btn:hover { background:#E6F0FF; }
+        
+        .bw-section { margin-top: 50px; border-top: 2px dashed #ddd; padding-top: 40px; }
+        /* CSS Trick for B/W SVG */
+        .grayscale img { filter: grayscale(100%) contrast(120%); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Aset Ikon Layanan (SVG)</h1>
+        <p>Ikon vektor berkualitas tinggi. Dapat diperbesar tanpa pecah. Warna utama: <code>#1E3A8A</code>.</p>
+        
+        <div class="grid">
+            <div class="card" data-name="akta" data-src="images/ikon/akta.svg">
+                <div class="icon-box"><img src="images/ikon/akta.svg" width="80"></div>
+                <div class="label">Akta Kelahiran</div>
+                <div class="filename">images/ikon/akta.svg</div>
+                <div class="btns">
+                    <button class="btn" data-size="64">PNG 64</button>
+                    <button class="btn" data-size="128">PNG 128</button>
+                    <button class="btn" data-size="64" data-bw="1">B/W 64</button>
+                    <button class="btn" data-size="128" data-bw="1">B/W 128</button>
+                </div>
+            </div>
+            <div class="card" data-name="ktp" data-src="images/ikon/ktp.svg">
+                <div class="icon-box"><img src="images/ikon/ktp.svg" width="80"></div>
+                <div class="label">KTP</div>
+                <div class="filename">images/ikon/ktp.svg</div>
+                <div class="btns">
+                    <button class="btn" data-size="64">PNG 64</button>
+                    <button class="btn" data-size="128">PNG 128</button>
+                    <button class="btn" data-size="64" data-bw="1">B/W 64</button>
+                    <button class="btn" data-size="128" data-bw="1">B/W 128</button>
+                </div>
+            </div>
+            <div class="card" data-name="kk" data-src="images/ikon/kk.svg">
+                <div class="icon-box"><img src="images/ikon/kk.svg" width="80"></div>
+                <div class="label">Kartu Keluarga</div>
+                <div class="filename">images/ikon/kk.svg</div>
+                <div class="btns">
+                    <button class="btn" data-size="64">PNG 64</button>
+                    <button class="btn" data-size="128">PNG 128</button>
+                    <button class="btn" data-size="64" data-bw="1">B/W 64</button>
+                    <button class="btn" data-size="128" data-bw="1">B/W 128</button>
+                </div>
+            </div>
+            <div class="card" data-name="domisili" data-src="images/ikon/domisili.svg">
+                <div class="icon-box"><img src="images/ikon/domisili.svg" width="80"></div>
+                <div class="label">Domisili</div>
+                <div class="filename">images/ikon/domisili.svg</div>
+                <div class="btns">
+                    <button class="btn" data-size="64">PNG 64</button>
+                    <button class="btn" data-size="128">PNG 128</button>
+                    <button class="btn" data-size="64" data-bw="1">B/W 64</button>
+                    <button class="btn" data-size="128" data-bw="1">B/W 128</button>
+                </div>
+            </div>
+            <div class="card" data-name="nikah" data-src="images/ikon/nikah.svg">
+                <div class="icon-box"><img src="images/ikon/nikah.svg" width="80"></div>
+                <div class="label">Surat Nikah</div>
+                <div class="filename">images/ikon/nikah.svg</div>
+                <div class="btns">
+                    <button class="btn" data-size="64">PNG 64</button>
+                    <button class="btn" data-size="128">PNG 128</button>
+                    <button class="btn" data-size="64" data-bw="1">B/W 64</button>
+                    <button class="btn" data-size="128" data-bw="1">B/W 128</button>
+                </div>
+            </div>
+            <div class="card" data-name="paspor" data-src="images/ikon/paspor.svg">
+                <div class="icon-box"><img src="images/ikon/paspor.svg" width="80"></div>
+                <div class="label">Paspor</div>
+                <div class="filename">images/ikon/paspor.svg</div>
+                <div class="btns">
+                    <button class="btn" data-size="64">PNG 64</button>
+                    <button class="btn" data-size="128">PNG 128</button>
+                    <button class="btn" data-size="64" data-bw="1">B/W 64</button>
+                    <button class="btn" data-size="128" data-bw="1">B/W 128</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bw-section">
+            <h2>Versi Hitam Putih (Cetak)</h2>
+            <p>Untuk versi B/W, cukup gunakan CSS <code>filter: grayscale(100%);</code> pada img tag, atau ubah fill color di dalam file SVG menjadi <code>#000000</code>.</p>
+            <div class="grid grayscale">
+            <div class="card">
+                <div class="icon-box"><img src="images/ikon/akta.svg" width="80"></div>
+                <div class="label">Akta Kelahiran</div>
+                <div class="variants">
+                  <span class="icon-wrap palette-indigo"><img src="images/ikon/akta.svg"></span>
+                  <span class="icon-wrap palette-purple"><img src="images/ikon/akta.svg"></span>
+                  <span class="icon-wrap palette-gold"><img src="images/ikon/akta.svg"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="icon-box"><img src="images/ikon/ktp.svg" width="80"></div>
+                <div class="label">KTP</div>
+                <div class="variants">
+                  <span class="icon-wrap palette-blue"><img src="images/ikon/ktp.svg"></span>
+                  <span class="icon-wrap palette-navy"><img src="images/ikon/ktp.svg"></span>
+                  <span class="icon-wrap palette-cyan"><img src="images/ikon/ktp.svg"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="icon-box"><img src="images/ikon/kk.svg" width="80"></div>
+                <div class="label">Kartu Keluarga</div>
+                <div class="variants">
+                  <span class="icon-wrap palette-purple"><img src="images/ikon/kk.svg"></span>
+                  <span class="icon-wrap palette-indigo"><img src="images/ikon/kk.svg"></span>
+                  <span class="icon-wrap palette-rose"><img src="images/ikon/kk.svg"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="icon-box"><img src="images/ikon/domisili.svg" width="80"></div>
+                <div class="label">Domisili</div>
+                <div class="variants">
+                  <span class="icon-wrap palette-green"><img src="images/ikon/domisili.svg"></span>
+                  <span class="icon-wrap palette-teal"><img src="images/ikon/domisili.svg"></span>
+                  <span class="icon-wrap palette-orange"><img src="images/ikon/domisili.svg"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="icon-box"><img src="images/ikon/nikah.svg" width="80"></div>
+                <div class="label">Surat Nikah</div>
+                <div class="variants">
+                  <span class="icon-wrap palette-gold"><img src="images/ikon/nikah.svg"></span>
+                  <span class="icon-wrap palette-purple"><img src="images/ikon/nikah.svg"></span>
+                  <span class="icon-wrap palette-blue"><img src="images/ikon/nikah.svg"></span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="icon-box"><img src="images/ikon/paspor.svg" width="80"></div>
+                <div class="label">Paspor</div>
+                <div class="variants">
+                  <span class="icon-wrap palette-navy"><img src="images/ikon/paspor.svg"></span>
+                  <span class="icon-wrap palette-cyan"><img src="images/ikon/paspor.svg"></span>
+                  <span class="icon-wrap palette-indigo"><img src="images/ikon/paspor.svg"></span>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+    <script>
+      async function svgText(url){ const r = await fetch(url); return await r.text(); }
+      function makeDataUrl(svg){ return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }
+      async function svgToPng({url, size=128, bw=false, name='icon'}){
+        let svg = await svgText(url);
+        if (bw) {
+          svg = svg
+            .replace(/#1E3A8A/gi, '#000000')
+            .replace(/#E6F0FF/gi, '#FFFFFF');
+        }
+        const img = new Image();
+        img.src = makeDataUrl(svg);
+        await new Promise(res => { img.onload = res; img.onerror = res; });
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (bw) ctx.filter = 'grayscale(100%) contrast(120%)';
+        // Fit SVG into square canvas while preserving aspect
+        const scale = Math.min(size / img.width, size / img.height);
+        const w = img.width * scale; const h = img.height * scale;
+        const x = (size - w) / 2; const y = (size - h) / 2;
+        ctx.drawImage(img, x, y, w, h);
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl; a.download = `${name}${bw?'-bw':''}-${size}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      document.querySelectorAll('.card').forEach(card => {
+        const url = card.getAttribute('data-src');
+        const name = card.getAttribute('data-name');
+        card.querySelectorAll('.btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const size = parseInt(btn.getAttribute('data-size'), 10);
+            const bw = !!btn.getAttribute('data-bw');
+            svgToPng({url, size, bw, name});
+          });
+        });
+      });
+    </script>
+</body>
+</html>

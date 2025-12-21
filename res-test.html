@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uji Responsif Otomatis</title>
+  <style>
+    body{font-family:Segoe UI,system-ui,Arial,sans-serif;margin:0;padding:16px;background:#f6f8fa;color:#111}
+    h1{font-size:18px;margin:0 0 12px}
+    .row{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+    input,button{font-size:14px;padding:6px 10px}
+    table{border-collapse:collapse;width:100%;background:#fff}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    th{background:#f0f3f5}
+    iframe{border:1px solid #ccc;height:700px;width:100%;background:#fff}
+    .grid{display:grid;grid-template-columns:300px 1fr;gap:16px}
+    .preset{display:flex;flex-wrap:wrap;gap:6px}
+    .preset button{background:#0b7;color:#fff;border:none;border-radius:6px;padding:6px 10px}
+  </style>
+</head>
+<body>
+  <h1>Uji Responsif Otomatis</h1>
+  <div class="grid">
+    <div>
+      <div class="row">
+        <label for="width">Lebar</label>
+        <input id="width" type="number" value="414">
+        <label for="height">Tinggi</label>
+        <input id="height" type="number" value="896">
+        <button id="apply">Terapkan</button>
+      </div>
+      <div class="preset">
+        <button data-w="320" data-h="640">320×640</button>
+        <button data-w="360" data-h="800">360×800</button>
+        <button data-w="375" data-h="812">375×812</button>
+        <button data-w="390" data-h="844">390×844</button>
+        <button data-w="414" data-h="896">414×896</button>
+        <button data-w="768" data-h="1024">768×1024</button>
+        <button data-w="820" data-h="1180">820×1180</button>
+        <button data-w="900" data-h="1200">900×1200</button>
+        <button data-w="1024" data-h="1366">1024×1366</button>
+        <button id="batch">Run Batch 320→414</button>
+      </div>
+    </div>
+    <div>
+      <iframe id="view" src="index.html"></iframe>
+    </div>
+  </div>
+  <h2>Hasil</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Perangkat</th>
+        <th>Lebar</th>
+        <th>Tinggi</th>
+        <th>DPR</th>
+        <th>currentSrc</th>
+        <th>H1 font-size</th>
+        <th>Nav font-size</th>
+        <th>Min Tap</th>
+        <th>Overflow-X</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="log"></tbody>
+  </table>
+  <script>
+    const view=document.getElementById('view');
+    const width=document.getElementById('width');
+    const height=document.getElementById('height');
+    const apply=document.getElementById('apply');
+    const log=document.getElementById('log');
+    const devices=[
+      {name:'Samsung Galaxy A12 (Android 11)',w:360,h:800},
+      {name:'Samsung Galaxy S20 (Android 13)',w:360,h:800},
+      {name:'Xiaomi Redmi Note 8 (Android 10)',w:360,h:800},
+      {name:'OPPO A5 (Android 9)',w:360,h:720},
+      {name:'vivo Y12 (Android 9)',w:360,h:720},
+      {name:'iPhone SE (iOS 12)',w:375,h:667},
+      {name:'iPhone 11 Pro (iOS 14)',w:375,h:812},
+      {name:'iPhone XR (iOS 16)',w:414,h:896}
+    ];
+    function setSize(w,h){view.style.width=w+'px';view.style.height=h+'px';}
+    function requestMetrics(){view.contentWindow.postMessage({type:'get-metrics'},'*');}
+    window.addEventListener('message',(e)=>{
+      if(!e||!e.data||e.data.type!=='metrics')return;
+      const m=e.data.payload;
+      const tr=document.createElement('tr');
+      const status=(!m.overflowX && m.minTap>=48)?'PASS':'CHECK';
+      tr.innerHTML=`<td>${currentDevice||''}</td><td>${m.width}</td><td>${m.height}</td><td>${m.dpr}</td><td>${m.currentSrc}</td><td>${m.h1Size}</td><td>${m.navSize}</td><td>${m.minTap}px</td><td>${m.overflowX}</td><td>${status}</td>`;
+      log.appendChild(tr);
+    });
+    let currentDevice='Manual';
+    apply.addEventListener('click',()=>{setSize(+width.value,+height.value);setTimeout(requestMetrics,200);});
+    document.querySelectorAll('.preset button').forEach(b=>{
+      b.addEventListener('click',()=>{setSize(+b.dataset.w,+b.dataset.h);setTimeout(requestMetrics,200);});
+    });
+    document.getElementById('batch').addEventListener('click',()=>{
+      const cases=[[320,640],[360,800],[375,812],[390,844],[414,896]];
+      let i=0;
+      const run=()=>{
+        if(i>=cases.length) return;
+        const [w,h]=cases[i++];
+        setSize(w,h);
+        setTimeout(()=>{requestMetrics(); setTimeout(run,300);},200);
+      };
+      run();
+    });
+    // Run Full Suite across named devices
+    const suiteBtn=document.createElement('button');
+    suiteBtn.textContent='Run Full Suite (Brand/Model)';
+    suiteBtn.style.margin='8px 0 12px'; suiteBtn.style.background='#046'; suiteBtn.style.color='#fff'; suiteBtn.style.border='none'; suiteBtn.style.borderRadius='6px'; suiteBtn.style.padding='8px 12px';
+    document.querySelector('.grid > div').appendChild(suiteBtn);
+    suiteBtn.addEventListener('click',()=>{
+      let i=0; const run=()=>{
+        if(i>=devices.length) return; const d=devices[i++]; currentDevice=d.name; setSize(d.w,d.h); setTimeout(()=>{requestMetrics(); setTimeout(run,350);},250);
+      }; run();
+    });
+    setTimeout(()=>{setSize(+width.value,+height.value);requestMetrics();},600);
+  </script>
+</body>
+</html>

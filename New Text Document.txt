@@ -1,0 +1,79 @@
+DATA PROFIL SPPG AKTIF
+KECAMATAN DAYEUHKOLOT
+ 
+No	Mulai Operasional	Nama SPPG	Nama Mitra atau Yayasan	Kecamatan	Desa	Alamat Lengkap Lokasi	Titik Lokasi	Nama Ketua SPPG	No. Whatsapp Ketua SPPG	Status	Status SPPG	Foto SPPG Tampak Depan	Foto SPPG Tampak Dalam	Foto SPPG Tampak Dapur	Suplai Makanan (Sebutkan Nama Sekolah, 
+Posyandu, Ponpes, Paud yang Disalurkan. Contoh : 
+SDN Malakasari = 426, SDN Ciluncat 2 = 354 dst)	Jumlah Karyawan	Total Produksi
+1	19-Aug-25	SPPG Bandung Dayeuhkolot Sukapura	Yayasan Jejak Cerita Usman	Dayeuhkolot	Sukapura	Jl. Adhyaksa VII, Sukapura, Kec. 
+Dayeuhkolot, Kabupaten Bandung, Jawa Barat 40267	-6.9660504953503,107.63490951265	MUHAMMAD FAUZAN ABDILLAH	85945464510	Biasa	Operasional	 	 	 	1.	RA Bahrul Ilmi : 48 porsi                                                
+2.	RA Al Hikamus : 51 porsi                                               
+3.	RA Al-Khoer : 37 porsi                                                    
+4.	TK Dhiya Ulhaa : 53 porsi                                              
+5.	KB Uulul Azmi: 36 porsi                                                 
+6.	RA Jamiul Ilmi : 15 porsi                                                
+7.	Paud Aster IV Nurul Huda : 42 Porsi                            
+8.	TKQ An - Anur : 90 porsi                                                
+9.	Paud Flamboyan : 30 Porsi                                            
+10.	SDN Babakan Tanjung : 165 Porsi                              
+11.	SDN Sukabirus : 181 Porsi                                           
+12.	SDN 1 Sukapura : 239 Porsi                                        
+13.	SDN 2 Sukapura : 171 Porsi                                        
+14.	MI Sukapura : 130 Porsi                                              
+15.	SMP Telkom : 854 Porsi                                               
+16.	SMP Garuda : 42 Porsi                                                 
+17.	SMAN 1 Dayeuhkolot : 1.231 Porsi
+18.	Posandu RW 01 : 87 Porsi                                           
+19.	Posyandu RW 02 : 83 Porsi                                         
+20.	Posyandu RW 03 : 102 Porsi                                       
+21.	Posyandu RW 04 : 113 Porsi                                       
+22.	Posyandu RW 05 : 59 Porsi                                         
+23.	Posyandu RW 06 : 96 Porsi	47	3,955
+2	21-Sep-25	SPPG Bandung Dayeuhkolot Cangkuang Kulon	ARAS JAYA PANGAN	Dayeuhkolot	Cangkuang Kulon	Jl. SINDANG PALAY RT 08 RW 09 DESA CANGKUANG KULON KEC. DAYEUHKOLOT	-6.9764697189376,107.59063334446	FIRMAN FERDIANSYAH	82295310052	Biasa	Operasional	 	 	 	1. SDN 05 Dayeuhkolot : 497 Porsi                                  2. SDN 08 Dayeuhkolot : 436 Porsi                                  3. SDN 09 Dayeuhkolot : 345 Porsi                                  
+4.	SDN 12 Dayeuhkolot : 333 Porsi                                  
+5.	SMP YPI : 46 Porsi                                                           
+6.	MTS Darul Qolam : 56 Porsi                                          
+7.	SMPN 2 Dayeuhkolot : 1.517 Porsi                              
+8.	Posyandu Teratai 1A dan Teratai 1B : 186 Porsi	47	3,416
+3	27-Oct-25	SPPG Bandung Dayeuhkolot Dayeuhkolot	YAYASAN DESA WISATA QURAN HAMASAH	Dayeuhkolot	Cangkuang Wetan	Jl. Cisirung - Palasari RT 006/RW 
+002 Desa Cangkuang Wetan, Kec. Dayeuhkolot	-6.972818,107.601443	IBNU NUGROHO SALAM	85155308239	Biasa	Operasional	 	 	 	1.	SDN Cangkuang 01 : 251 Porsi                                     
+2.	SDN Sukapura 02 : 432 Porsi                                        
+3.	SDN 3 Cangkuang 312 Porsi                                          
+4.	SDN 4 Cangkuang : 221 Porsi                                        
+5.	SDN 6 Cangkuang: 480 Porsi                                         
+6.	SDN 13 Cangkuang : 262 Porsi                                     
+7.	⁠SMPN 1 Dayeuhkolot : 1393 Porsi	47	3,351
+4	17-Nov-25	SPPG Bandung Dayeuhkolot Cangkuang Kulon 2	Yayasan Cendikia Mulia Nusantara	Dayeuhkolot	Cangkuang Kulon	Jalan Terusan Cibaduyut No. 103 Desa Cangkuang Kulon Kec. 
+Dayeuhkolot Kab. Bandung 40239	-6.876021078288396, 107.58275170000037	Satria Fakhri, S.T.	83822100367	Biasa	Operasional	 	 	 	1. SDN CANGKUANG 01 = 251                                          2. SDN CANGKUANG 02 = 436                                          3. SDN CANGKUANG 03 = 309                                          4. SDN CANGKUANG 04 = 227                                          5. SDN CANGKUANG 06 = 483                                          
+6.	SDN CANGKUANG 13 = 270                                          
+7.	SDN KOTA BARU = 519                                                  
+8.	SDN CANGKUANG 15 = 414                                          
+9.	SMP PLUS AL-AMANAH = 465                                      
+10.	SMP ISLAM GRAVITASI = 62                                       
+11.	SDN SAYURAN 01 = 441                                              
+12.	SDN SAYURAN 02 = 346	47	4,223
+5	15-Dec-25	SPPG Bandung Dayeuhkolot Cangkuang Wetan	Yayasan Daarul Musthofa Lil Quran	Dayeuhkolot	Cangkuang Wetan	Rw 09 Kampung Bojong Citeupus Desa Cangkuang Wetan, Kec. 
+Dayeuhkolot, Kab. Bandung, Jawa Barat	-6.976387, 107.607374	Ahlul Azmi, S.H.	82120181947	Biasa	Aktif	 	 	 	1.	SDN PASAWAHAN 08= 435                                           
+2.	SDN dayeuhkolot 06 = 225                                           
+3.	SDN dayeuhkolot 03 = 240	49	900
+6																	
+7																	
+8																	
+9																	
+10																	
+11																	
+12																	
+
+Total Biaya Produksi	kordinat
+Rp35,000,000	Rp35,000,000
+Rp32,000,000	Rp32,000,000
+Rp30,000,000	Rp30,000,000
+Rp42,230,000	Rp42,230,000
+	
+	
+	
+	
+	
+	
+	
+	
+

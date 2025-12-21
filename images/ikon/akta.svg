@@ -1,0 +1,17 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="docGrad" x1="32" y1="12" x2="32" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A7C1FF"/>
+      <stop offset="1" stop-color="#1E3A8A" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 12H84L104 32V116H32V12Z" fill="url(#docGrad)" stroke="#1E3A8A" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M84 12V32H104" stroke="#1E3A8A" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="68" cy="64" r="16" stroke="#1E3A8A" stroke-width="4" fill="white"/>
+  <path d="M68 48C68 44 72 40 76 44" stroke="#0B1F4A" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="62" cy="62" r="2.4" fill="#0B1F4A"/>
+  <circle cx="74" cy="62" r="2.4" fill="#0B1F4A"/>
+  <path d="M64 70Q68 74 72 70" stroke="#0B1F4A" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="48" y1="92" x2="88" y2="92" stroke="#1E3A8A" stroke-width="3" stroke-linecap="round"/>
+  <line x1="48" y1="102" x2="78" y2="102" stroke="#1E3A8A" stroke-width="3" stroke-linecap="round"/>
+</svg>

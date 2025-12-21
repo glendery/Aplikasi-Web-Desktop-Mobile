@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Kecamatan Dayeuhkolot" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [107.5860, -6.9850],
+          [107.5860, -6.9500],
+          [107.6350, -6.9500],
+          [107.6350, -6.9850],
+          [107.5860, -6.9850]
+        ]]
+      }
+    }
+  ]
+}

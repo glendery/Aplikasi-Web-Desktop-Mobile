@@ -1,0 +1,10 @@
+/ktp /chat.html?q=KTP 200
+/kk /chat.html?q=KK 200
+/akta /chat.html?q=Akta%20Kelahiran 200
+/pindah /chat.html?q=Surat%20Pindah 200
+/status /chat.html?q=Cek%20Status%20Berkas 200
+/panduan /chat.html?q=Panduan 200
+/lokasi /index.html?goto=lokasi 200
+/layanan /index.html?goto=layanan 200
+/instagram /index.html?goto=ikuti 200
+/* /index.html 200

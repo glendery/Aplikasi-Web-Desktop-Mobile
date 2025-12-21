@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dayeuhkolot Bedas Serve – Layanan Mandiri</title>
+    <meta name="theme-color" content="#058a83">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="images/ikon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Mobile specific adjustments */
+        @media (max-width: 480px) {
+            .app { padding: 0 !important; }
+            .chat-panel { border-radius: 0 !important; height: 100vh; display: flex; flex-direction: column; }
+            .panel-body { padding: 12px !important; flex: 1; overflow: hidden; }
+            .messages-card { max-height: none !important; flex: 1; display: flex; flex-direction: column; }
+            .chat-box { flex: 1; overflow-y: auto; min-height: 0; }
+            
+            .message {
+                max-width: 95% !important;
+                padding: 10px 12px !important;
+                font-size: 13.5px !important;
+            }
+            .option-btn, .deep-link-btn {
+                min-width: 100% !important;
+                margin-bottom: 6px;
+                padding: 10px 12px !important;
+            }
+            /* Force button container to stack */
+            .action-buttons {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            /* Allow cards to expand closer to edges */
+            .detail-card {
+                margin-left: -8px !important;
+                margin-right: -8px !important;
+                width: auto !important;
+                border-radius: 6px !important;
+                padding: 10px 8px !important;
+            }
+            .chat-header { padding: 12px 16px; }
+            .chat-header h2 { font-size: 16px; }
+        }
+
+        :root{ 
+            --primary: var(--toska-main); 
+            --accent: var(--toska-dark); 
+            --bot-msg:#ffffff; 
+            --user-msg: linear-gradient(135deg, var(--toska-main) 0%, #00796b 100%); 
+            --border-color:#e6e6e6; 
+            --text-light: var(--text-light); 
+            --text-dark: var(--text-body); 
+            --wa-color:#25D366;
+            --bg-gradient: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+        }
+
+        /* Base resets */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background: var(--bg-gradient);color:var(--text-dark)}
+
+        /* App layout */
+        .app { display:flex; align-items:flex-start; justify-content:center; padding:28px; box-sizing:border-box; min-height: 100vh; }
+        .chat-panel { 
+            width:100%; max-width:1100px; 
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius:24px; 
+            box-shadow:0 20px 50px rgba(0, 56, 51, 0.15); 
+            overflow:hidden; 
+            border:1px solid rgba(255,255,255,0.6); 
+        }
+        .chat-header { 
+            display:flex; gap:12px; align-items:center; padding:18px 24px; 
+            background: rgba(255,255,255,0.8); 
+            backdrop-filter: blur(10px);
+            border-bottom:1px solid rgba(0,0,0,0.04); 
+            position: sticky; top: 0; z-index: 10;
+        }
+        .chat-header .avatar { width:56px; height:56px; border-radius:12px; font-size:26px; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
+        .chat-header .info h2 { font-size:18px; margin:0; font-weight:700; }
+        .chat-header .info p { margin:0; font-size:13px; color:var(--text-light); }
+
+        /* Main layout inside panel */
+        .panel-body { display:flex; gap:20px; padding:20px; box-sizing:border-box; }
+        .left-column { width:100%; }
+        .chat-box { background:transparent; padding:0; min-height:280px; }
+
+        /* Card for messages area */
+        .messages-card { background:white; border-radius:12px; padding:16px; box-shadow:0 6px 20px rgba(14,30,37,0.04); border:1px solid rgba(8,37,47,0.03); max-height:68vh; overflow:auto; position: relative; }
+        .messages-card > * { position: relative; z-index: 1; }
+        body.chat-wallpaper .messages-card { background: rgba(255,255,255,0.94); backdrop-filter: saturate(1.05) blur(3px); }
+
+        /* Input area card */
+        .input-area { background:white; padding:14px; border-radius:12px; border:1px solid rgba(8,37,47,0.03); box-shadow:0 6px 18px rgba(14,30,37,0.03); }
+
+        /* Improved visual for WA button */
+        .wa-btn { border-radius:10px; padding:10px 14px; font-weight:700; box-shadow:0 8px 20px rgba(37,211,102,0.12); }
+
+        /* Reduce very long messages width */
+        .message { max-width: 86%; }
+
+        .back-btn {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width:36px;
+            height:36px;
+            border-radius:10px;
+            text-decoration:none;
+            color: var(--accent);
+            border: 2px solid var(--accent);
+            transition: all 0.2s ease;
+        }
+        .back-btn:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+            background: rgba(0,137,123,0.10);
+            color: var(--accent);
+            border: 1px solid rgba(0,137,123,0.25);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2e7d32;
+            box-shadow: 0 0 0 3px rgba(46,125,50,0.12);
+        }
+        .status-offline { background: rgba(244,67,54,0.10); color: #c62828; border-color: rgba(198,40,40,0.25); }
+        .status-offline .status-dot { background: #c62828; box-shadow: 0 0 0 3px rgba(198,40,40,0.12); }
+
+        /* Existing CSS continues after this insertion */
+
+        /* (Removed stray JS/data that was accidentally inserted here.) */
+        .avatar { 
+            width: 48px; 
+            height: 48px; 
+            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.05));
+            border-radius: 12px;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 26px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            z-index: 1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .info { z-index: 1; }
+        .info h2 { 
+            margin: 0; 
+            font-size: 18px; 
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .info p { 
+            margin: 4px 0 0 0; 
+            font-size: 13px; 
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        /* Chat Area */
+        .chat-box {
+            flex: 1;
+            padding: 16px 12px;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            position: relative;
+        }
+        .messages-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: url('images/kecamatan.png');
+            background-size: 180px;
+            background-repeat: repeat;
+            background-position: 24px 24px;
+            opacity: 0;
+            filter: grayscale(10%);
+            transition: opacity .25s ease;
+            z-index: 0;
+        }
+        body.chat-wallpaper .messages-card::before { opacity: .08; }
+        body.chat-wallpaper-fallback .messages-card::before {
+            background-image:
+              radial-gradient(circle at 12px 12px, rgba(0,137,123,0.22) 1.4px, transparent 1.5px),
+              radial-gradient(circle at 36px 36px, rgba(0,137,123,0.14) 1.1px, transparent 1.2px),
+              radial-gradient(circle at 60px 20px, rgba(0,137,123,0.10) 1.1px, transparent 1.2px);
+            background-size: 24px 24px, 36px 36px, 48px 48px;
+            background-position: 0 0, 8px 12px, 16px 6px;
+            filter: none;
+            opacity: .08;
+        }
+        body.chat-wallpaper .chat-box { background: transparent; }
+        
+        .chat-box::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-box::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .chat-box::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--accent), var(--primary));
+            border-radius: 3px;
+        }
+
+        .message {
+            max-width: 82%;
+            padding: 14px 16px;
+            border-radius: 18px;
+            font-size: clamp(13px, 3.5vw, 14px);
+            line-height: 1.6;
+            position: relative;
+            animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            word-wrap: break-word;
+        }
+        .date-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-light);
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .date-divider::before, .date-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(0,0,0,0.08);
+        }
+        .msg-meta {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-light);
+            opacity: 0.9;
+            text-align: right;
+        }
+
+        .bot-message { 
+            background: #ffffff;
+            align-self: flex-start; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border-radius: 20px 20px 20px 4px;
+            border: 1px solid rgba(0,0,0,0.03);
+            max-width: 85%;
+        }
+        body.chat-wallpaper .bot-message { background: rgba(255,255,255,0.95); }
+        body.chat-wallpaper .bot-message::after { display: none; }
+        .bot-message::after { display: none; }
+        
+        .user-message { 
+            background: var(--user-msg); 
+            color: white;
+            align-self: flex-end; 
+            margin-left: auto; 
+            box-shadow: 0 4px 15px rgba(0, 137, 123, 0.3);
+            border-radius: 20px 20px 4px 20px;
+            font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .user-message::after { display: none; }
+        .typing {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: typing 1s infinite ease-in-out;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0% { transform: translateY(0); opacity: 0.6; }
+            50% { transform: translateY(-4px); opacity: 1; }
+            100% { transform: translateY(0); opacity: 0.6; }
+        }
+        .scroll-bottom-btn {
+            position: fixed;
+            right: 84px;
+            bottom: 120px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+            cursor: pointer;
+        }
+        .scroll-bottom-btn.show { display: flex; }
+        .toast-container{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:8px;width:90%;max-width:520px}
+        .toast{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--accent);color:var(--text-dark);padding:10px 12px;border-radius:12px;box-shadow:0 8px 18px rgba(0,0,0,0.12);animation:slideIn .3s ease}
+        .toast.success{border-color:#2e7d32}
+        .toast.error{border-color:#e53935}
+        .toast img{width:22px;height:22px;border-radius:6px}
+        .loading-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);z-index:3001}
+        .loading-card{background:#fff;border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 16px 32px rgba(0,0,0,0.25)}
+        .loading-card img{width:36px;height:36px;animation:spin 1s linear infinite}
+        .loading-text{font-weight:700;color:var(--primary)}
+        @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2001;
+        }
+        .modal.open { display: flex; }
+        .modal-card {
+            width: 96%;
+            max-width: 720px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+            overflow: hidden;
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+        .modal-body {
+            padding: 16px 18px;
+            display: grid;
+            gap: 12px;
+        }
+        .modal-body input, .modal-body textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 13px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            padding: 12px 18px;
+            border-top: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .message h3 { 
+            margin: 0 0 12px 0; 
+            color: var(--primary); 
+            font-size: 16px; 
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+        
+        .user-message h3 {
+            color: rgba(255, 255, 255, 0.95);
+        }
+        
+        .message ul, .message ol { 
+            padding-left: 24px; 
+            margin: 8px 0; 
+        }
+        
+        .message li { 
+            margin-bottom: 8px;
+            line-height: 1.55;
+        }
+        #modalBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:saturate(1.2) blur(2px);opacity:0;pointer-events:none;transition:opacity .35s ease;z-index:9998}
+        #modalBackdrop.show{opacity:1;pointer-events:auto}
+        #citizenFormModal{opacity:0;transform:translateY(12px) scale(.98);transition:opacity .35s cubic-bezier(.22,.61,.36,1),transform .35s cubic-bezier(.22,.61,.36,1);z-index:9999}
+        #citizenFormModal.open{opacity:1;transform:translateY(0) scale(1)}
+        @media (prefers-reduced-motion: reduce){#modalBackdrop,#citizenFormModal{transition:none}}
+        .icon-wrap { width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.15), inset 0 0 0 2px rgba(255,255,255,0.9); position:relative; }
+        .option-btn img.icon { width:18px; height:18px; transition: transform .35s cubic-bezier(.22,.61,.36,1), filter .35s cubic-bezier(.22,.61,.36,1); }
+        .option-btn:hover img.icon { transform: translateY(-2px) scale(1.08) rotate(-3deg); filter: drop-shadow(0 2px 4px rgba(30,58,138,0.35)); }
+        .palette-blue { background: linear-gradient(135deg,#A7C1FF,#1E3A8A); }
+        .palette-indigo { background: linear-gradient(135deg,#C7D2FF,#5B21B6); }
+        .palette-purple { background: linear-gradient(135deg,#E9D5FF,#7C3AED); }
+        .palette-green { background: linear-gradient(135deg,#A7F3D0,#047857); }
+        .palette-gold { background: linear-gradient(135deg,#FDE68A,#B45309); }
+        .palette-navy { background: linear-gradient(135deg,#93C5FD,#1E3A8A); }
+        .palette-teal { background: linear-gradient(135deg,#99F6E4,#0F766E); }
+        .palette-cyan { background: linear-gradient(135deg,#A5F3FC,#155E75); }
+        .palette-rose { background: linear-gradient(135deg,#FECDD3,#BE123C); }
+        .palette-orange { background: linear-gradient(135deg,#FED7AA,#C2410C); }
+        body.theme-alt .icon-wrap { filter: saturate(1.05) brightness(1.02); box-shadow:0 2px 6px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(0,0,0,0.35); }
+        .option-btn:active img.icon { transform: scale(0.96); }
+        @keyframes bounceIcon { 0%{transform:translateY(0)} 30%{transform:translateY(-3px)} 60%{transform:translateY(0)} 100%{transform:translateY(0)} }
+        @keyframes pulseIcon { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+        @keyframes rotateIcon { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        .anim-bounce:hover .icon { animation: bounceIcon 400ms cubic-bezier(.22,.61,.36,1); }
+        .anim-pulse { animation: pulseIcon 1200ms ease-in-out infinite; }
+        .anim-rotate:hover .icon { animation: rotateIcon 500ms linear; }
+        .anim-scale:hover .icon { transform: scale(1.12); }
+        .anim-move:hover .icon { transform: translateX(2px); }
+        @media (prefers-reduced-motion: reduce){ .anim-bounce .icon, .anim-pulse, .anim-rotate .icon, .option-btn img.icon { animation:none !important; transition:none !important; } }
+        .icon-badge { position:absolute; right:-3px; top:-3px; width:12px; height:12px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#fff; box-shadow:0 1px 3px rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.85); }
+        .badge-kia { background: linear-gradient(135deg,#FECDD3,#BE123C); }
+        .badge-skp { background: linear-gradient(135deg,#99F6E4,#0F766E); }
+        .badge-rename { background: linear-gradient(135deg,#FDE68A,#B45309); color:#0B1F4A; border-color: rgba(11,31,74,0.35); }
+
+        /* Input Area */
+        .input-area {
+            background: white;
+            padding: 14px;
+            display: flex;
+            gap: 12px;
+            border-top: 1px solid var(--border-color);
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .input-area input { 
+            flex: 1; 
+            padding: 12px 16px; 
+            border: 2px solid var(--border-color);
+            border-radius: 24px; 
+            outline: none;
+            font-size: clamp(13px, 3.6vw, 14px);
+            color: var(--text-dark);
+            background: #f9f9f9;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-weight: 500;
+        }
+        
+        .input-area input:focus {
+            background: white;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 137, 123, 0.1);
+            padding: 12px 18px;
+        }
+        
+        .input-area input::placeholder {
+            color: var(--text-light);
+            font-weight: 400;
+        }
+        
+        .input-area button { 
+            background: linear-gradient(135deg, #00695c 0%, #00897b 100%);
+            color: white; 
+            border: none; 
+            width: clamp(40px, 9vw, 46px); 
+            height: clamp(40px, 9vw, 46px); 
+            border-radius: 50%; 
+            cursor: pointer; 
+            font-size: 20px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 12px rgba(0, 105, 92, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .input-area button:hover {
+            transform: scale(1.08) rotate(5deg);
+            box-shadow: 0 6px 18px rgba(0, 105, 92, 0.4);
+        }
+        
+        .input-area button:active {
+            transform: scale(0.94) rotate(5deg);
+        }
+
+        /* Options Container - compact grid */
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+            align-items: start;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .chip {
+            background: rgba(0, 137, 123, 0.1);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .option-btn {
+            background: #ffffff;
+            border: 1px solid rgba(0, 137, 123, 0.15);
+            color: var(--primary);
+            padding: 10px 16px;
+            border-radius: 50px;
+            font-size: 13.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 2px 6px rgba(0, 137, 123, 0.05);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            white-space: normal;
+            line-height: 1.3;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .option-btn:hover {
+            background: var(--primary);
+            color: #ffffff;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 137, 123, 0.25);
+            border-color: var(--primary);
+        }
+        .option-btn:hover .icon { filter: brightness(0) invert(1); }
+
+        .option-btn:active { transform: translateY(-1px); }
+        .option-btn .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            width: 6px; height: 6px;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.5) 40%, rgba(255,255,255,0.0) 70%);
+            animation: ripple 600ms ease-out forwards;
+        }
+        @keyframes ripple {
+            from { opacity: 0.8; }
+            to   { width: 280px; height: 280px; opacity: 0; }
+        }
+
+        /* When options container used for full list, make it scrollable */
+        .options-container[style*="max-height"] { padding-right: 6px; }
+
+        .chips { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 6px; 
+            margin-top: 8px; 
+        }
+        .chip { 
+            display: inline-flex; 
+            align-items: center; 
+            padding: 6px 10px; 
+            font-size: 12px; 
+            border-radius: 14px; 
+            background: rgba(0,137,123,0.08); 
+            color: var(--primary); 
+            border: 1px solid var(--border-color);
+        }
+
+        @media (max-width: 640px) {
+            .options-container { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+            .option-btn { padding: 9px 10px; font-size: 13px; }
+        }
+
+        @media (max-width: 480px) {
+            .panel-body { padding: 12px; }
+            .messages-card { padding: 12px; }
+            .options-container { grid-template-columns: 1fr; gap: 8px; }
+            .option-btn { width: 100%; font-size: 14px; padding: 10px 12px; }
+            .input-area { flex-wrap: wrap; gap: 8px; }
+            .input-area input { flex: 1 1 100%; width: 100%; }
+            #openHistory { flex: 1 1 100%; width: 100%; margin-left: 0 !important; }
+            .scroll-bottom-btn { right: 14px; bottom: 160px; }
+        }
+        body.compact .messages-card { padding: 8px; }
+        body.compact .message { padding: 8px 10px; max-width: 96%; }
+        body.compact .options-container { gap: 6px; }
+        body.compact .option-btn { padding: 8px 10px; border-radius: 14px; font-size: 12px; }
+
+        /* WA Button - Vibrant Style */
+        .wa-btn { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: linear-gradient(135deg, #25D366 0%, #1dd1a1 100%);
+            color: white; 
+            padding: 14px 20px; 
+            border-radius: 14px; 
+            text-decoration: none; 
+            margin-top: 14px; 
+            font-weight: 700;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 6px 16px rgba(37, 211, 102, 0.35);
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .wa-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.45);
+        }
+        
+        .wa-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Animations */
+        @keyframes popIn { 
+            from { 
+                opacity: 0; 
+                transform: scale(0.85) translateY(10px);
+            } 
+            to { 
+                opacity: 1; 
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+        
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+        .fly-logo {
+            width: 42px;
+            height: 42px;
+            display: inline-block;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+            animation: fly 3.2s ease-in-out infinite;
+        }
+        @keyframes fly {
+            0% { transform: translateY(0) rotate(0deg) scale(1); }
+            25% { transform: translateY(-10px) rotate(-6deg) scale(1.02); }
+            50% { transform: translateY(0) rotate(0deg) scale(1); }
+            75% { transform: translateY(-8px) rotate(6deg) scale(1.02); }
+            100% { transform: translateY(0) rotate(0deg) scale(1); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app {
+                padding: 0;
+                align-items: stretch;
+                min-height: 100dvh;
+            }
+            .chat-panel {
+                max-width: 100%;
+                height: 100dvh;
+                border-radius: 0;
+                border: none;
+                display: flex;
+                flex-direction: column;
+                box-shadow: none;
+            }
+            .panel-body {
+                padding: 0;
+                flex: 1;
+                overflow: hidden;
+            }
+            .left-column {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            .messages-card {
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+                flex: 1;
+                max-height: none;
+                padding-bottom: 90px; /* Space for input area */
+            }
+            .input-area {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                border-radius: 20px 20px 0 0;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+                z-index: 100;
+                padding: 14px;
+                padding-bottom: max(14px, env(safe-area-inset-bottom));
+                background: rgba(255, 255, 255, 0.96);
+                backdrop-filter: blur(10px);
+            }
+            
+            .message {
+                max-width: 92%;
+                padding: 12px 14px;
+            }
+            
+            .chat-header {
+                padding: 12px 16px;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: rgba(255,255,255,0.9);
+            }
+            
+            .info h2 {
+                font-size: 16px;
+            }
+            
+            .avatar {
+                width: 44px;
+                height: 44px;
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body class="chat-page">
+<header class="header">
+    <div class="header-left">
+        <img class="brand-logo-left" src="images/kecamatan.png" alt="Logo apk ini">
+        <img class="brand-logo-left logo-slogan" src="images/slogan2.png" alt="Logo apk ini">       
+        <div class="brand-text">
+            <h1 class="brand-title" id="brandTitle">Dayeuhkolot Bedas Serve</h1>
+            <p class="brand-subtitle">Pelayanan Terpadu Kecamatan Dayeuhkolot</p>
+        </div>
+    </div>
+        <div class="header-right">
+            <a href="index.html" class="btn-cta">Beranda</a>
+            <button class="theme-toggle" id="chatThemeToggle">🎨</button>
+            <button class="theme-toggle" id="toggleChatBg">🖼️</button>
+            <button class="a11y-toggle" id="chatA11yToggle" title="Mode Buta Warna / Kontras" style="background:#222;color:#fff;border:none;border-radius:40px;padding:8px 12px;font-weight:700;cursor:pointer;margin-left:8px;">♿</button>
+        </div>
+    </header>
+
+        <div class="app">
+            <div class="chat-panel">
+
+        <div class="chat-header">
+        <a href="index.html" class="back-btn">&#8592;</a>
+        <div class="avatar"><img src="images/Dayeuklt.jpg" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></div>
+        <div class="info">
+            <h2>Layanan Mandiri</h2>
+            <p>Dayeuhkolot BEDAS SERVE</p>
+            <span class="status-badge" id="netStatus"><span class="status-dot"></span>Online</span>
+        </div>
+        <!-- tombol admin dihapus: tambah layanan, import DOCX, keluar admin -->
+    </div>
+
+            <div class="panel-body">
+                <div class="left-column">
+                    <div class="messages-card">
+                        <div class="chat-box" id="chatBox">
+        <div class="message bot-message">
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--primary);">Halo! Senang ketemu kamu 😄</div>
+            <div style="font-size: 14px; margin-bottom: 12px; color: var(--text-light); line-height: 1.6;">
+                Ini <b style="color: var(--primary);">Dayeuhkolot BEDAS SERVE</b> – asisten digital kamu untuk semua urusan administrasi kependudukan!
+            </div>
+            <div style="background: linear-gradient(135deg, rgba(0, 137, 123, 0.08), rgba(0, 105, 92, 0.04)); padding: 14px; border-radius: 12px; margin-bottom: 14px; border-left: 3px solid var(--accent); font-size: 13px; line-height: 1.6;">
+                <b style="color: var(--primary); display: block; margin-bottom: 8px;">🎯 Apa yang bisa aku bantu?</b>
+                Mulai dari <b>IKD, KTP, KK, Akta</b>, sampai <b>pindah datang</b> – aku punya data lengkap <b><span id="serviceCountDisplay">46</span> jenis layanan</b> administrasi!
+            </div>
+            <div style="font-size: 13px; color: var(--text-light); margin-bottom: 14px;">
+                <b style="display: block; margin-bottom: 6px; color: var(--primary);">💡 Cara pakainya:</b>
+                Ketik nama layanan atau pilih tombol di bawah, terus aku kasih info lengkap tentang syaratnya dan cara urus-nya!
+            </div>
+            <div style="font-size: 12px; color: var(--text-light); font-style: italic; padding: 8px; background: rgba(244, 67, 54, 0.05); border-radius: 8px;">
+                ✨ <b>Psst!</b> Kalau ada yang kurang jelas, langsung chat admin aja via WhatsApp 👇
+            </div>
+            
+            <div class="options-container">
+                <button class="option-btn anim-bounce" onclick="handleOption('IKD')" style="display:flex;align-items:center;gap:8px;justify-content:center;"><span class="icon-wrap palette-blue"><img class="icon" src="images/ikon/ktp.svg" alt="IKD"></span> Identitas Digital (IKD)</button>
+                <button class="option-btn anim-bounce" onclick="handleOption('KTP')" style="display:flex;align-items:center;gap:8px;justify-content:center;"><span class="icon-wrap palette-blue"><img class="icon" src="images/ikon/ktp.svg" alt="KTP"></span> KTP-el</button>
+                <button class="option-btn anim-bounce" onclick="handleOption('Kartu Keluarga')" style="display:flex;align-items:center;gap:8px;justify-content:center;"><span class="icon-wrap palette-purple"><img class="icon" src="images/ikon/kk.svg" alt="KK"></span> Kartu Keluarga</button>
+                <button class="option-btn anim-bounce" onclick="handleOption('Akta Kelahiran')" style="display:flex;align-items:center;gap:8px;justify-content:center;"><span class="icon-wrap palette-indigo"><img class="icon" src="images/ikon/akta.svg" alt="Akta"></span> Akta Kelahiran</button>
+                <button class="option-btn anim-bounce" onclick="handleOption('Pindah')" style="display:flex;align-items:center;gap:8px;justify-content:center;"><span class="icon-wrap palette-green"><img class="icon" src="images/ikon/domisili.svg" alt="Pindah"><span class="icon-badge badge-skp">↔</span></span> Pindah Datang/Keluar</button>
+                <button class="option-btn anim-bounce" onclick="showAllServices()" style="display:flex;align-items:center;gap:8px;justify-content:center;"><span class="icon-wrap palette-navy"><img class="icon" src="images/ikon/semua.svg" alt="Semua"></span> Semua Layanan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ketik layanan (cth: IKD)..." onkeypress="handleKeyPress(event)" list="serviceSuggestions">
+        <button onclick="sendMessage()">➤</button>
+    </div>
+    <datalist id="serviceSuggestions"></datalist>
+
+            </div> <!-- /.left-column -->
+    </div> <!-- /.panel-body -->
+    </div> <!-- /.chat-panel -->
+</div> <!-- /.app -->
+<div class="toast-container" id="toastContainer"></div>
+<div class="loading-overlay" id="loadingOverlay"><div class="loading-card"><img src="images/ikon.png" alt="Loading"><div class="loading-text" id="loadingText">Memuat...</div></div></div>
+<a href="https://wa.me/6281234567890?text=Halo%20BEDAS%20SERVE" class="floating-wa" aria-label="WhatsApp">
+  <img src="images/whatsapp.png" alt="WhatsApp" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg'">
+</a>
+<button class="back-to-top" id="backToTop">↑</button>
+
+
+<div class="modal" id="historyModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="font-weight:700;color:var(--primary);">Riwayat Percakapan</div>
+      <button class="option-btn" id="closeHistory">Tutup</button>
+    </div>
+    <div class="modal-body" style="max-height:60vh; overflow:auto;">
+      <div id="historyContent" style="display:grid; gap:10px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="option-btn" id="clearHistory" style="background:#e53935;color:#fff;">Bersihkan Riwayat</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="citizenFormModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="font-weight:700;color:var(--primary);">Form Warga</div>
+      <button class="option-btn" id="closeCitizenForm">Tutup</button>
+    </div>
+    <div class="modal-body">
+      <input id="cfNama" placeholder="Nama Lengkap">
+      <input id="cfHp" placeholder="No HP (wajib)">
+      <input id="cfEmail" placeholder="Email (opsional)">
+      <input id="cfAlamat" placeholder="Alamat (opsional)">
+      <div style="margin-top:4px;">
+         <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px; color:var(--primary);">Layanan yang Dicari (Penting)</label>
+         <div style="display:flex; gap:6px;">
+           <input id="cfLayanan" placeholder="Ketik atau pilih layanan..." style="border:2px solid var(--primary); background: rgba(0, 137, 123, 0.04); flex:1;">
+           <button class="option-btn" id="browseServicesBtn" style="width:40px; padding:0; font-size:16px; flex-shrink:0; justify-content:center;">☰</button>
+         </div>
+         <div id="serviceBrowseList" style="display:none; max-height:150px; overflow-y:auto; margin-top:6px; border:1px solid #eee; border-radius:8px; background:#fff; padding:6px; font-size:12px;"></div>
+       </div>
+      <textarea id="cfPesan" placeholder="Pesan singkat (opsional)" rows="4"></textarea>
+      <div style="font-size:12px;color:var(--text-light);">Data dikirim ke admin untuk percepatan layanan.</div>
+      <div id="cfError" style="margin-top:8px; font-size:12px; color:#e53935;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="option-btn" id="submitCitizenForm" style="background:var(--primary);color:#fff;">Kirim</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+    <script src="data-services.js">    if (document.getElementById('chatA11yToggle')) {
+        const btn = document.getElementById('chatA11yToggle');
+        btn.addEventListener('click', () => {
+            const isSafe = document.body.classList.toggle('color-safe');
+            localStorage.setItem('bedas_a11y_mode', isSafe ? 'enabled' : 'disabled');
+            if (isSafe) showToast('Mode Kontras Tinggi Aktif', 'success');
+            else showToast('Mode Normal Aktif', 'info');
+        });
+        // Check initial state
+        if (localStorage.getItem('bedas_a11y_mode') === 'enabled') {
+            document.body.classList.add('color-safe');
+        }
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'bedas_a11y_mode') {
+                document.body.classList.toggle('color-safe', e.newValue === 'enabled');
+            }
+        });
+    }
+    // Existing theme toggle logic if present
+    if (document.getElementById('chatThemeToggle')) {
+        document.getElementById('chatThemeToggle').addEventListener('click', () => {
+            document.body.classList.toggle('theme-alt');
+            localStorage.setItem('bedas_theme', document.body.classList.contains('theme-alt') ? 'alt' : 'default');
+        });
+        if (localStorage.getItem('bedas_theme') === 'alt') document.body.classList.add('theme-alt');
+    }
+    // Existing bg toggle logic if present
+    if (document.getElementById('toggleChatBg')) {
+        document.getElementById('toggleChatBg').addEventListener('click', () => {
+            document.body.classList.toggle('chat-wallpaper');
+            localStorage.setItem('bedas_chat_bg', document.body.classList.contains('chat-wallpaper') ? 'on' : 'off');
+        });
+        if (localStorage.getItem('bedas_chat_bg') === 'on') document.body.classList.add('chat-wallpaper');
+    }
+</script>
+    <script>
+        const adminPhoneNumber = "6281234567890";
+        const WARIS_TEMPLATES = [
+            { title: "Surat Bagan Ahli Waris (PDF)", url: "Template Waris/SURAT BAGAN AHLI WARIS.pdf" },
+            { title: "Surat Kuasa (PDF)", url: "Template Waris/SURAT KUASA.pdf" },
+            { title: "Surat Pernyataan Dua Orang Saksi (PDF)", url: "Template Waris/SURAT PERNYATAAN DUA ORANG SAKSI.pdf" },
+            { title: "Surat Pernyataan Pemohon Ahli Waris (PDF)", url: "Template Waris/SURAT PERNYATAAN PEMOHON SURAT KETERANGAN AHLI WARIS.pdf" }
+        ];
+        function availableTemplatesFor(serviceTitle){ return WARIS_TEMPLATES; }
+        function slugifyTitle(t){ return String(t||'').toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-'); }
+        function makeDeepLink(t){
+            const slug = slugifyTitle(t);
+            const pkg = 'id.citigov.bandungkab';
+            const fb = 'https://play.google.com/store/apps/details?id=' + pkg;
+            
+            // Cek apakah user menggunakan Android
+            const isAndroid = /android/i.test(navigator.userAgent);
+            
+            if (isAndroid) {
+                // Encode fallback URL agar aman dalam string intent
+                const encodedFb = encodeURIComponent(fb);
+                // Menggunakan scheme 'bedasdigital' sebagai asumsi deep link app
+                // Format: intent://<host>/<path>#Intent;scheme=<scheme>;package=<package>;...
+                return `intent://bedasdigital/services/${slug}#Intent;scheme=bedasdigital;package=${pkg};S.browser_fallback_url=${encodedFb};end`;
+            } else {
+                // Jika bukan Android (Desktop/iOS), langsung ke Play Store
+                return fb;
+            }
+        }
+        const themeBtn = document.getElementById('chatThemeToggle');
+        if (themeBtn) {
+            themeBtn.addEventListener('click', () => document.body.classList.toggle('theme-alt'));
+        }
+        const toggleBgBtn = document.getElementById('toggleChatBg');
+        function loadBgPref(){
+            const q = new URLSearchParams(location.search);
+            const o = q.get('bg');
+            if (o === '1') return true;
+            if (o === '0') return false;
+            return (localStorage.getItem('bedas_chat_bg')||'1')==='1';
+        }
+        function saveBgPref(v){ localStorage.setItem('bedas_chat_bg', v?'1':'0'); }
+        function applyBgPref(){
+            const on = loadBgPref();
+            document.body.classList.toggle('chat-wallpaper', on);
+            if (!on) { document.body.classList.remove('chat-wallpaper-fallback'); }
+        }
+        applyBgPref();
+        function testBgImage(){
+            const img = new Image();
+            img.onload = () => {};
+            img.onerror = () => { document.body.classList.add('chat-wallpaper-fallback'); };
+            img.src = 'images/kecamatan.png';
+        }
+        testBgImage();
+        if (toggleBgBtn) {
+            toggleBgBtn.addEventListener('click', () => {
+                const cur = loadBgPref();
+                saveBgPref(!cur);
+                applyBgPref();
+                if (!cur) testBgImage();
+            });
+        }
+        const netBadge = document.getElementById('netStatus');
+        function updateNetBadge(){
+            if (!netBadge) return;
+            const online = navigator.onLine;
+            netBadge.classList.toggle('status-offline', !online);
+            netBadge.innerHTML = `<span class="status-dot"></span>${online ? 'Online' : 'Offline'}`;
+        }
+        updateNetBadge();
+        window.addEventListener('online', updateNetBadge);
+        window.addEventListener('offline', updateNetBadge);
+        const btt = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            if (!btt) return;
+            btt.classList.toggle('show', window.pageYOffset > 300);
+        });
+        ['click','keydown','mousemove','touchstart','scroll'].forEach(evt => {
+            // window.addEventListener(evt, resetAdminIdleTimer, { capture: true });
+            // document.addEventListener(evt, resetAdminIdleTimer, { capture: true });
+        });
+        if (btt) {
+            btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+        }
+        const scrollBottomBtn = document.createElement('button');
+        scrollBottomBtn.className = 'scroll-bottom-btn';
+        scrollBottomBtn.textContent = '↓';
+        document.body.appendChild(scrollBottomBtn);
+        scrollBottomBtn.addEventListener('click', () => { 
+            const mc = document.querySelector('.messages-card');
+            if(mc) mc.scrollTop = mc.scrollHeight;
+            else if(typeof chatBox !== 'undefined') chatBox.scrollTop = chatBox.scrollHeight;
+        });
+        const addModal = document.getElementById('addServiceModal');
+        const openAdd = document.getElementById('openAddService');
+        const closeAdd = document.getElementById('closeAddService');
+        const saveServiceBtn = document.getElementById('saveService');
+        const resetServiceBtn = document.getElementById('resetService');
+        const importModal = document.getElementById('importModal');
+        const openImportBtn = document.getElementById('openImport');
+        const closeImportBtn = document.getElementById('closeImport');
+        const importDocxBtn = document.getElementById('importDocx');
+        const docxInput = document.getElementById('docxFile');
+        const historyModal = document.getElementById('historyModal');
+        const openHistoryBtn = document.getElementById('openHistory');
+        const closeHistoryBtn = document.getElementById('closeHistory');
+        const clearHistoryBtn = document.getElementById('clearHistory');
+        const historyContent = document.getElementById('historyContent');
+        const citizenFormModal = document.getElementById('citizenFormModal');
+        const closeCitizenFormBtn = document.getElementById('closeCitizenForm');
+        const submitCitizenFormBtn = document.getElementById('submitCitizenForm');
+        const brandTitleEl = document.getElementById('brandTitle');
+        document.addEventListener('click', (e) => {
+            const t = e.target.closest('.option-btn');
+            if (!t) return;
+            const rect = t.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const s = document.createElement('span');
+            s.className = 'ripple';
+            s.style.left = x + 'px';
+            s.style.top = y + 'px';
+            t.appendChild(s);
+            setTimeout(() => { s.remove(); }, 650);
+        }, { capture: true });
+        function updateCompactMode(){
+            const q = new URLSearchParams(location.search);
+            const forced = q.get('compact');
+            const m = window.matchMedia('(max-width: 420px)').matches;
+            const enable = forced === '1' ? true : (forced === '0' ? false : m);
+            document.body.classList.toggle('compact', enable);
+        }
+        updateCompactMode();
+        window.addEventListener('resize', updateCompactMode);
+        
+        const MAX_MESSAGES = 18;
+        function genUUID(){ const a=crypto.getRandomValues(new Uint8Array(16)); a[6]=(a[6]&0x0f)|0x40; a[8]=(a[8]&0x3f)|0x80; const h=[...a].map(b=>b.toString(16).padStart(2,'0')); return `${h[0]}${h[1]}${h[2]}${h[3]}-${h[4]}${h[5]}-${h[6]}${h[7]}-${h[8]}${h[9]}-${h[10]}${h[11]}${h[12]}${h[13]}${h[14]}${h[15]}`; }
+        function loadArchive() { try { return JSON.parse(localStorage.getItem('bedas_chat_archive') || '[]'); } catch(e) { return []; } }
+        function saveArchive(arr) { localStorage.setItem('bedas_chat_archive', JSON.stringify(arr)); }
+        let chatArchive = loadArchive();
+        function loadSubmissions() { try { return JSON.parse(localStorage.getItem('bedas_submissions') || '[]'); } catch(e) { return []; } }
+        function saveSubmissions(arr) { localStorage.setItem('bedas_submissions', JSON.stringify(arr)); }
+        function getSubmissionStatus(){ try { return JSON.parse(localStorage.getItem('bedas_submission_status')||'[]'); } catch(e){ return []; } }
+        function saveSubmissionStatus(arr){ try { localStorage.setItem('bedas_submission_status', JSON.stringify(arr)); } catch(e){} }
+        function recordSubmissionStatus(id, status, message){ const arr=getSubmissionStatus(); arr.push({ id, status, message: message||'', ts: new Date().toISOString() }); saveSubmissionStatus(arr); }
+        function appendPermanentStats(item){
+            try{
+                const s = JSON.parse(localStorage.getItem('bedas_submissions_stats')||'[]');
+                const rec = { id: Date.now().toString(36)+Math.random().toString(36).substr(2), ref_id: item.id, ts: item.ts, nama: item.nama, hp: item.hp, email: item.email||'', alamat: item.alamat||'', layanan: item.layanan||'', pesan: item.pesan||'', source: item.source||'' };
+                s.push(rec);
+                localStorage.setItem('bedas_submissions_stats', JSON.stringify(s));
+            }catch(e){}
+        }
+        let submissions = loadSubmissions();
+        function getServedIndex(){ try { return JSON.parse(localStorage.getItem('bedas_served_index')||'[]'); } catch(e){ return []; } }
+        function saveServedIndex(arr){ try { localStorage.setItem('bedas_served_index', JSON.stringify(arr)); } catch(e){} }
+        function getServedTotal(){ try { return parseInt(localStorage.getItem('bedas_served_total')||'0',10)||0; } catch(e){ return 0; } }
+        function saveServedTotal(n){ try { localStorage.setItem('bedas_served_total', String(n)); } catch(e){} }
+        function getServedLog(){ try { return JSON.parse(localStorage.getItem('bedas_served_log')||'[]'); } catch(e){ return []; } }
+        function saveServedLog(arr){ try { localStorage.setItem('bedas_served_log', JSON.stringify(arr)); } catch(e){} }
+        function recordServed(payload){
+            const idx = getServedIndex();
+            const hp = normalizePhone(payload.hp);
+            const nama = String(payload.nama||'').trim();
+            if (!nama || !isValidPhone(hp)) return;
+            if (!idx.includes(hp)){
+                idx.push(hp);
+                saveServedIndex(idx);
+                const total = getServedTotal()+1;
+                saveServedTotal(total);
+                const log = getServedLog();
+                log.push({ ts:new Date().toISOString(), delta:+1, reason:'new_unique', count_current: idx.length, total_accumulated: total });
+                saveServedLog(log);
+            }
+        }
+        
+        function openHistory() {
+            historyContent.innerHTML = chatArchive.length ? chatArchive.join('') : `<div style="font-size:13px;color:var(--text-light);">Belum ada riwayat.</div>`;
+            historyModal.classList.add('open');
+        }
+        function closeHistory() { historyModal.classList.remove('open'); }
+        function clearHistory() { chatArchive = []; saveArchive(chatArchive); historyContent.innerHTML = `<div style="font-size:13px;color:var(--text-light);">Riwayat dibersihkan.</div>`; }
+        if (openHistoryBtn) openHistoryBtn.addEventListener('click', openHistory);
+        if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', closeHistory);
+        if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearHistory);
+        let activeModal = null; let lastFocusEl = null; let formInitialized = false;
+        function ensureBackdrop(){ let el=document.getElementById('modalBackdrop'); if(!el){ el=document.createElement('div'); el.id='modalBackdrop'; document.body.appendChild(el); el.addEventListener('click', ()=>{ if(activeModal) closeCitizenForm(); }); } return el; }
+        function hasAccess(role){ const r=(localStorage.getItem('bedas_access_role')||'user'); if(role==='admin') return r==='admin'; return ['user','admin'].includes(r); }
+        function dataReady(){ try{ const s=localStorage.getItem('bedas_services_db'); return !!s; }catch(e){ return false; } }
+        function lazyLoadForm(){ if(formInitialized) return; try{ const dlg=citizenFormModal; if(!dlg) return; dlg.setAttribute('role','dialog'); dlg.setAttribute('aria-modal','true'); dlg.setAttribute('aria-labelledby','citizenFormTitle'); formInitialized=true; }catch(e){ const err=document.getElementById('cfError'); if(err) err.textContent='Gagal memuat komponen form.'; addMessage('<div style="color:#e53935;font-size:13px;">Form gagal dimuat. Coba refresh.</div>','bot'); }}
+        function presentModal(kind){ try{ if(activeModal) return; if(!dataReady()) { addMessage('<div style="font-size:13px;color:var(--text-light);">Data layanan belum siap. Coba lagi.</div>','bot'); return; } if(!hasAccess('user')) { addMessage('<div style="font-size:13px;color:#e53935;">Anda tidak memiliki akses menampilkan form.</div>','bot'); return; }
+            const backdrop=ensureBackdrop(); backdrop.classList.add('show'); const err = document.getElementById('cfError'); if (err) err.textContent=''; lastFocusEl=document.activeElement; lazyLoadForm(); citizenFormModal.classList.add('open'); document.body.style.overflow='hidden'; activeModal=kind; trackEvent({ event_type:'modal_open', modal:kind }); const first=citizenFormModal.querySelector('input,textarea,button,select'); if(first) first.focus(); }catch(e){ addMessage('<div style="color:#e53935;font-size:13px;">Terjadi kesalahan saat membuka form.</div>','bot'); }}
+        function closeCitizenForm(){ const backdrop=document.getElementById('modalBackdrop'); if(backdrop) backdrop.classList.remove('show'); citizenFormModal.classList.remove('open'); document.body.style.overflow=''; activeModal=null; if(lastFocusEl) try{ lastFocusEl.focus(); }catch(e){} trackEvent({ event_type:'modal_close', modal:'citizen' }); }
+        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && activeModal) closeCitizenForm(); });
+        function openCitizenForm() { try{ localStorage.setItem('bedas_form_start_ts', String(Date.now())); }catch(e){} presentModal('citizen'); setupFormProgress(); }
+        function setupFormProgress(){ try{ const modal=citizenFormModal; if(!modal) return; let bar=document.getElementById('cfTimerBar'); let label=document.getElementById('cfCountdown'); if(!bar){ bar=document.createElement('div'); bar.id='cfTimerBar'; bar.style.cssText='height:6px;background:#b2dfdb;border-radius:4px;margin:8px 0;position:relative;overflow:hidden'; const inner=document.createElement('div'); inner.id='cfTimerInner'; inner.style.cssText='height:100%;width:0;background:#058a83;transition:width 0.5s'; bar.appendChild(inner); const actions=modal.querySelector('.modal-actions'); if(actions){ actions.parentNode.insertBefore(bar, actions); } else { modal.appendChild(bar); } label=document.createElement('div'); label.id='cfCountdown'; label.style.cssText='font-size:12px;color:var(--text-light);margin-bottom:6px'; if(actions){ actions.parentNode.insertBefore(label, actions); } else { modal.appendChild(label); } } const start=parseInt(localStorage.getItem('bedas_form_start_ts')||String(Date.now()),10); const total=10*60*1000; const tick=()=>{ const now=Date.now(); const left=Math.max(0, total-(now-start)); const pct=Math.max(0, Math.min(100, Math.round(((total-left)/total)*100))); const inner=document.getElementById('cfTimerInner'); if(inner) inner.style.width=pct+'%'; if(label) label.textContent='Batas waktu pengisian: '+Math.ceil(left/60000)+' menit'; }; clearInterval(window.__cfTimer); window.__cfTimer=setInterval(tick,1000); tick(); }catch(e){} }
+        function openCitizenFormPrefill(title) { const el = document.getElementById('cfLayanan'); if (el) el.value = title || ''; openCitizenForm(); }
+        if (closeCitizenFormBtn) closeCitizenFormBtn.addEventListener('click', closeCitizenForm);
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            let icon = 'ℹ️';
+            if (type === 'success') icon = '✅';
+            if (type === 'error') icon = '⚠️';
+            toast.innerHTML = `<span style="font-size:18px">${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showLoading(text){ const o=document.getElementById('loadingOverlay'); const t=document.getElementById('loadingText'); if(t&&text) t.textContent=text; if(o) o.style.display='flex'; }
+        function hideLoading(){ const o=document.getElementById('loadingOverlay'); if(o) o.style.display='none'; }
+        if (submitCitizenFormBtn) submitCitizenFormBtn.addEventListener('click', async () => {
+            try { showLoading('Mengirim...'); await submitCitizenForm(); }
+            catch(e){ const err=document.getElementById('cfError'); if(err) err.textContent='Terjadi kesalahan. Coba lagi.'; showToast('Gagal mengirim form. Periksa jaringan.', 'error'); }
+            finally { hideLoading(); }
+        });
+        
+        async function submitCitizenForm() {
+            const nama = getInputValue('cfNama');
+            const rawHp = getInputValue('cfHp');
+            const hp = normalizePhone(rawHp);
+            const email = getInputValue('cfEmail');
+            const alamat = getInputValue('cfAlamat');
+            const layanan = getInputValue('cfLayanan');
+            const pesan = getInputValue('cfPesan');
+            const missing = [];
+            let errMsg = '';
+            if (!nama) missing.push('Nama');
+            if (!isValidPhone(hp)) missing.push('No HP valid (62XXXXXXXXXX)');
+            if (email && !isValidEmail(email)) errMsg = 'Format email tidak valid';
+            if (missing.length || errMsg) {
+                const errEl = document.getElementById('cfError');
+                const txt = [missing.length ? `Mohon lengkapi: ${missing.join(', ')}.` : '', errMsg].filter(Boolean).join(' ');
+                if (errEl) errEl.textContent = txt;
+                
+                showToast(`Data belum lengkap: ${missing.join(', ')} ${errMsg}`, 'error');
+                
+                const modal = document.querySelector('#citizenFormModal .modal-card');
+                if(modal) {
+                    modal.style.animation = 'none';
+                    modal.offsetHeight; /* trigger reflow */
+                    modal.style.animation = 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both';
+                }
+
+                trackEvent({ event_type:'onboarding_validation_failed', missing_fields: missing, invalid_email: !!(email && !isValidEmail(email)) });
+                return;
+            }
+            const profile = { nama, hp, email, alamat };
+            try { localStorage.setItem('bedas_user_profile', JSON.stringify(profile)); } catch(e) {}
+            
+            // --- SECURITY: THROTTLE SUBMISSIONS ---
+            const lastTs = parseInt(localStorage.getItem('bedas_last_submission_ts')||'0', 10);
+            const now = Date.now();
+            if (now - lastTs < 5000) { // 5 seconds debounce
+                addMessage('<div style="color:#e53935">Mohon tunggu sebentar sebelum mengirim ulang.</div>', 'bot');
+                return;
+            }
+
+            const payload = {
+                id: genUUID(),
+                nama, hp, email, alamat, layanan, pesan,
+                ts: new Date().toISOString(),
+                source: 'chat.html'
+            };
+            submissions.push(payload);
+            saveSubmissions(submissions);
+            try{ localStorage.setItem('bedas_last_submitted_payload', JSON.stringify(payload)); }catch(e){}
+            recordSubmissionStatus(payload.id, 'confirmed', 'Tersimpan lokal');
+            appendPermanentStats(payload);
+            localStorage.setItem('bedas_onboarding_done','true');
+            localStorage.setItem('bedas_last_submission_ts', String(now)); // Record timestamp
+            
+            // --- LOGGING ---
+            try {
+                const logs = JSON.parse(localStorage.getItem('bedas_citizen_logs')||'[]');
+                logs.push({ ts: new Date().toISOString(), type: 'FORM_SUBMIT', id: payload.id });
+                localStorage.setItem('bedas_citizen_logs', JSON.stringify(logs));
+            } catch(e){}
+
+            recordServed(payload);
+
+            // Restore close button if it was hidden (mandatory mode)
+            const closeBtn = document.getElementById('closeCitizenForm');
+            if(closeBtn) closeBtn.style.display = '';
+
+            closeCitizenForm();
+            
+            // Start Timer for next session expiry
+            setTimeout(() => {
+                openCitizenForm();
+                const cb = document.getElementById('closeCitizenForm');
+                if(cb) cb.style.display = 'none';
+                addMessage('<div>⏳ Sesi data Anda habis. Mohon isi ulang.</div>', 'bot');
+            }, 10 * 60 * 1000); // 10 mins
+
+            const firstName = nama.split(' ')[0];
+            addMessage(`Halo <b>${firstName}</b>! 👋<br>Selamat datang di layanan Dayeuhkolot Bedas.<br>Data Anda telah tersimpan.`, 'bot');
+            
+            if (layanan) {
+                setTimeout(() => {
+                    addMessage(`Anda mencari layanan: <b>${layanan}</b>. Tunggu sebentar, saya carikan informasinya...`, 'bot');
+                    setTimeout(() => processQuery(layanan), 800);
+                }, 500);
+            } else {
+                addMessage(`Silakan pilih layanan di bawah atau ketik pertanyaan Anda.`, 'bot');
+            }
+
+            trackEvent({ event_type:'onboarding_completed' });
+            if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '1'; }
+            if (userInput) { userInput.disabled = false; userInput.placeholder = 'Ketik layanan (cth: IKD)...'; }
+            addMessage(`<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px"><button class="option-btn" onclick="window.openHistory()">Riwayat Pengiriman</button></div>`, 'bot');
+        }
+
+
+        function trackEvent(payload) { try{ const arr=JSON.parse(localStorage.getItem('bedas_analytics')||'[]'); arr.push({ ...payload, ts:new Date().toISOString() }); localStorage.setItem('bedas_analytics', JSON.stringify(arr)); }catch(e){} }
+
+        function getInputValue(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+        function splitLines(v) { return v.split('\n').map(s => s.trim()).filter(Boolean); }
+        function normalizePhone(v) {
+            const d = String(v || '').replace(/\D/g,'');
+            if (!d) return '';
+            if (d.startsWith('62')) return d;
+            if (d.startsWith('0')) return '62' + d.slice(1);
+            return d;
+        }
+        function isValidPhone(v) {
+            const d = String(v || '').replace(/\D/g,'');
+            if (!d) return false;
+            // after normalization, expect 62 + 8-13 digits
+            const n = normalizePhone(d);
+            return /^62\d{8,13}$/.test(n);
+        }
+        function isValidEmail(v) {
+            if (!v) return true;
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        }
+        function checkPendingSubmission(){
+            let last=null; try{ const s=localStorage.getItem('bedas_last_submitted_payload'); if(s) last=JSON.parse(s); }catch(e){}
+            if(!last) return;
+            const exists = loadSubmissions().some(x=>x.id===last.id);
+            const elapsed = Date.now() - (Date.parse(last.ts)||Date.now());
+            const threshold = 60*1000;
+            if(!exists && elapsed>threshold){
+                recordSubmissionStatus(last.id, 'failed', 'Formulir tidak muncul');
+                addMessage(`<div style="color:#e53935">Formulir tidak muncul setelah beberapa waktu.</div><div style="display:flex;gap:8px;justify-content:center;margin-top:6px"><button class="option-btn" onclick="window.resendLastSubmission()">Kirim Ulang</button></div>`, 'bot');
+            }
+        }
+        function resendLastSubmission(){
+            try{
+                const s=localStorage.getItem('bedas_last_submitted_payload');
+                if(!s){ addMessage('<div>Tiada data terakhir.</div>', 'bot'); return; }
+                const last=JSON.parse(s);
+                const arr=loadSubmissions();
+                const exists=arr.some(x=>x.id===last.id);
+                if(!exists){ arr.push(last); saveSubmissions(arr); appendPermanentStats(last); recordSubmissionStatus(last.id,'resent','Dikirim ulang'); addMessage('<div>Formulir dikirim ulang.</div>', 'bot'); }
+            }catch(e){ addMessage('<div>Gagal kirim ulang.</div>', 'bot'); }
+        }
+        function openStatusModal(){
+            const arr=getSubmissionStatus();
+            const html = arr.length? arr.slice().reverse().slice(0,30).map(x=>`<div style="display:grid;grid-template-columns:140px 100px 1fr;gap:8px;padding:6px;border-bottom:1px solid #eee"><div>${new Date(x.ts).toLocaleString()}</div><div><b>${x.status}</b></div><div>${(x.message||'')}</div></div>`).join('') : '<div style="padding:12px;color:var(--text-light)">Belum ada status.</div>';
+            addMessage(`<div><div style="font-weight:700;color:var(--primary);margin-bottom:8px">Status Pengiriman</div>${html}<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="option-btn" onclick="showMainMenu()">Tutup</button></div></div>`, 'bot');
+        }
+        function loadExtraServices() {
+            try { return JSON.parse(localStorage.getItem('bedas_extra_services') || '[]'); } catch(e) { return []; }
+        }
+        function saveExtraServices(arr) { localStorage.setItem('bedas_extra_services', JSON.stringify(arr)); }
+        let extraServices = loadExtraServices();
+        if (openAdd) openAdd.addEventListener('click', openAddService);
+        if (closeAdd) closeAdd.addEventListener('click', closeAddService);
+        if (openImportBtn) openImportBtn.addEventListener('click', openImport);
+        // --- 1. Global Variables & Initialization ---
+        let services = []; // Main services variable
+        const chatBox = document.getElementById('chatBox');
+        
+        // --- 2. Database Logic ---
+        function initServiceDB() {
+            try {
+                // Try load from LocalStorage
+                const stored = localStorage.getItem('bedas_services_db');
+                if (stored) {
+                    services = JSON.parse(stored);
+                    
+                    // --- SYNC SPECIFIC SERVICES FROM CODEBASE ---
+                    if (typeof defaultServices !== 'undefined') {
+                        // Fix for Layanan PERMOHONAN AHLI WARIS templates not showing if LS is stale
+                        const warisTitle = "Layanan PERMOHONAN AHLI WARIS";
+                        const warisDefault = defaultServices.find(s => s.title === warisTitle);
+                        const warisStored = services.find(s => s.title === warisTitle);
+                        
+                        if (warisDefault && warisStored) {
+                             // Force update templates and procedure from code
+                             warisStored.templates = warisDefault.templates;
+                             warisStored.procedure = warisDefault.procedure;
+                             saveServiceDB(); // Persist the fix
+                        }
+                    }
+                    // ---------------------------------------------
+
+                } else if (typeof defaultServices !== 'undefined') {
+                    // Seed from default if LS empty
+                    services = [...defaultServices];
+                    
+                    // Migrate legacy if exists
+                    try {
+                        const legacy = JSON.parse(localStorage.getItem('bedas_extra_services') || '[]');
+                        if (legacy.length > 0) {
+                            services = [...services, ...legacy];
+                            localStorage.removeItem('bedas_extra_services');
+                        }
+                    } catch(e){}
+                    
+                    saveServiceDB();
+                } else {
+                    console.warn('No services found (LS empty & defaultServices undefined)');
+                    services = [];
+                }
+            } catch(e) {
+                console.error('Service DB Init Failed:', e);
+                // Fallback to default if available
+                if (typeof defaultServices !== 'undefined') services = [...defaultServices];
+                else services = [];
+            }
+        }
+
+        function saveServiceDB() {
+            localStorage.setItem('bedas_services_db', JSON.stringify(services));
+        }
+
+        function getAllServices() {
+            return services;
+        }
+        
+        // --- 3. Event Listeners ---
+        // Pindahkan listener yang bergantung pada elemen DOM ke sini atau pastikan elemen ada
+        if (openAdd) openAdd.addEventListener('click', openAddService);
+        if (closeAdd) closeAdd.addEventListener('click', closeAddService);
+        if (openImportBtn) openImportBtn.addEventListener('click', openImport);
+        if (closeImportBtn) closeImportBtn.addEventListener('click', closeImport);
+        if (resetServiceBtn) resetServiceBtn.addEventListener('click', () => {
+            ['svcTitle','svcKeywords','svcDesc','svcReq','svcProc','svcProcOnline','svcSystem'].forEach(id => { const el = document.getElementById(id); if (el) el.value=''; });
+        });
+
+        // --- 4. Chat Logic & UI ---
+        // const chatBox = document.getElementById('chatBox'); // Already declared above
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.querySelector('.input-area button');
+        const messagesCard = document.querySelector('.messages-card');
+        let typingDiv = null;
+
+        function ensureVisible() { if (messagesCard) messagesCard.scrollIntoView({ behavior: 'smooth', block: 'end' }); }
+        function scrollToBottom() { 
+            if (messagesCard) messagesCard.scrollTo({ top: messagesCard.scrollHeight, behavior: 'smooth' });
+            else chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+            ensureVisible(); 
+        }
+        function showScrollBottomIfNeeded() {
+            const target = messagesCard || chatBox;
+            if (!target) return;
+            const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 40;
+            scrollBottomBtn.classList.toggle('show', !nearBottom);
+        }
+        if (messagesCard) messagesCard.addEventListener('scroll', showScrollBottomIfNeeded);
+        else chatBox.addEventListener('scroll', showScrollBottomIfNeeded);
+
+        function fmtTime() {
+            const d = new Date();
+            const h = String(d.getHours()).padStart(2,'0');
+            const m = String(d.getMinutes()).padStart(2,'0');
+            return `${h}:${m}`;
+        }
+        function saveChat() {
+            localStorage.setItem('bedas_chat_html', chatBox.innerHTML);
+        }
+        function restoreChat() {
+            const html = localStorage.getItem('bedas_chat_html');
+            if (html) {
+                chatBox.innerHTML = html;
+                setTimeout(() => { scrollToBottom(); showScrollBottomIfNeeded(); }, 50);
+            }
+        }
+        restoreChat();
+        window.addEventListener('beforeunload', () => {
+            try { localStorage.removeItem('bedas_chat_html'); } catch(e) {}
+        });
+        window.addEventListener('pagehide', () => {
+            try { localStorage.removeItem('bedas_chat_html'); } catch(e) {}
+        });
+        function isOnboarded() { return localStorage.getItem('bedas_onboarding_done') === 'true'; }
+        // enforceOnboarding and idle timer removed in favor of checkFormSession
+        
+        function addMessage(html, sender) {
+            insertDateDividerIfNeeded();
+            const div = document.createElement('div');
+            div.className = `message ${sender}-message`;
+            div.innerHTML = `${html}<div class="msg-meta">${fmtTime()}</div>`;
+            chatBox.appendChild(div);
+            while (chatBox.children.length > MAX_MESSAGES) {
+                const first = chatBox.firstElementChild;
+                if (first) {
+                    chatArchive.push(first.outerHTML);
+                    chatBox.removeChild(first);
+                } else {
+                    break;
+                }
+            }
+        saveArchive(chatArchive);
+        scrollToBottom();
+        saveChat();
+        showScrollBottomIfNeeded();
+        }
+        // Lihat Status button removed
+        let lastDividerDate = '';
+        function fmtDateLabel(d){
+            const days = ['Ming','Sen','Sel','Rab','Kam','Jum','Sab'];
+            const day = days[d.getDay()];
+            const dd = String(d.getDate()).padStart(2,'0');
+            const mm = String(d.getMonth()+1).padStart(2,'0');
+            const yy = d.getFullYear();
+            return `${day}, ${dd}/${mm}/${yy}`;
+        }
+        function insertDateDividerIfNeeded(){
+            const now = new Date();
+            const label = fmtDateLabel(now);
+            if (label !== lastDividerDate) {
+                const div = document.createElement('div');
+                div.className = 'date-divider';
+                div.textContent = label;
+                chatBox.appendChild(div);
+                lastDividerDate = label;
+            }
+        }
+        function resetChatForNewQuery() {
+            chatBox.innerHTML = '';
+            typingDiv = null;
+        }
+
+        function handleKeyPress(e) { if (e.key === 'Enter') sendMessage(); }
+        function handleOption(text) { if (!isOnboarded()) { openCitizenForm(); addMessage('Silakan isi Form Warga terlebih dahulu.', 'bot'); return; } resetChatForNewQuery(); addMessage(text, 'user'); trackEvent({ event_type:'option_click', query_text: text }); processQuery(text); }
+
+        function sendMessage() {
+            if (!isOnboarded()) { openCitizenForm(); addMessage('Silakan isi Form Warga terlebih dahulu.', 'bot'); return; }
+            const text = userInput.value.trim();
+            if (!text) return;
+            resetChatForNewQuery();
+            addMessage(text, 'user');
+            userInput.value = '';
+            if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.7'; }
+            userInput.disabled = true;
+            typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot-message';
+            typingDiv.innerHTML = `<div class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+            chatBox.appendChild(typingDiv);
+            scrollToBottom();
+            setTimeout(() => { processQuery(text); }, 600);
+        }
+
+
+        function refreshSuggestions() {
+            const el = document.getElementById('serviceSuggestions');
+            if (!el) return;
+            const set = new Set();
+            getAllServices().forEach(s => {
+                set.add(s.title);
+                (s.keywords || []).forEach(k => set.add(k));
+            });
+            el.innerHTML = Array.from(set).map(v => `<option value="${v}">`).join('');
+        }
+        function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+        function highlightTitle(text, query) { return text; }
+        function toggleSection(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const span = document.getElementById('chev_' + id);
+            const show = el.style.display === 'none';
+            el.style.display = show ? 'block' : 'none';
+            if (span) span.textContent = show ? '▾' : '▸';
+        }
+        function paletteForTitle(t){
+            const arr = ['palette-blue','palette-indigo','palette-purple','palette-green','palette-gold','palette-navy','palette-teal','palette-cyan','palette-rose','palette-orange'];
+            const s = String(t||''); let h=0; for(let i=0;i<s.length;i++){ h=(h*31 + s.charCodeAt(i))>>>0; }
+            return arr[h % arr.length];
+        }
+        function pickIconMeta(t){
+            const s = String(t||'').toLowerCase();
+            let base = 'images/ikon/ktp.svg';
+            if (s.includes('ikd') || s.includes('ktp') || s.includes('biodata') || s.includes('kia')) base = 'images/ikon/ktp.svg';
+            else if (s.includes('kartu keluarga') || s.includes(' kk ') || s.startsWith('kk')) base = 'images/ikon/kk.svg';
+            else if (s.includes('akta') || s.includes('kelahiran') || s.includes('kematian') || s.includes('lahir') || s.includes('mati') || s.includes('pengangkatan') || s.includes('pengakuan') || s.includes('pengesahan') || s.includes('pembatalan') || s.includes('pembetulan') || s.includes('peristiwa penting') || s.includes('perubahan nama')) base = 'images/ikon/akta.svg';
+            else if (s.includes('pindah') || s.includes('datang') || s.includes('keluar') || s.includes('domisili') || s.includes('skp')) base = 'images/ikon/domisili.svg';
+            else if (s.includes('nikah') || s.includes('perkawinan') || s.includes('cerai')) base = 'images/ikon/nikah.svg';
+            else if (s.includes('paspor') || s.includes('itas') || s.includes('itap') || s.includes('warga negara asing') || s.includes('kewarganegaraan') || s.includes('abg')) base = 'images/ikon/paspor.svg';
+            let badgeClass = '';
+            let badgeText = '';
+            if (s.includes('kia')) { badgeClass = 'badge-kia'; badgeText = 'K'; }
+            else if (s.includes('skpwni') || (s.includes('pindah') && s.includes('wni'))) { badgeClass = 'badge-skp'; badgeText = '↔'; }
+            else if (s.includes('perubahan nama') || s.includes('ganti nama') || s.includes('ubah nama')) { badgeClass = 'badge-rename'; badgeText = 'Aa'; }
+            return {icon: base, palette: paletteForTitle(t), badgeClass, badgeText};
+        }
+        function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9\s]/g,'').trim(); }
+        function lev(a,b){ const m=a.length,n=b.length; const dp=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) dp[i][0]=i; for(let j=0;j<=n;j++) dp[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const cost=a[i-1]===b[j-1]?0:1; dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost); } } return dp[m][n]; }
+        function scoreSvc(s, q){ const qTokens=norm(q).split(/\s+/).filter(Boolean); const title=norm(s.title); const keys=(s.keywords||[]).map(norm); let score=0; qTokens.forEach(t=>{ if(!t) return; const direct = title.includes(t) || keys.some(k=>k.includes(t)); if(direct) { score+=3; return; } const near = Math.min(lev(title,t), ...keys.map(k=>lev(k,t))) <= 2; if(near) score+=2; }); return score; }
+        function processQuery(query) {
+            const results = getAllServices().map(s=>({svc:s,score:scoreSvc(s,query)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).map(x=>x.svc);
+            trackEvent({ event_type:'search', query_text: query });
+
+            if (results.length === 0) {
+                if (typingDiv) { typingDiv.remove(); typingDiv = null; }
+                addMessage(`
+                    <div style="text-align: center;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">🔍</div>
+                        <div style="font-weight: 500; color: var(--text-dark); margin-bottom: 8px;">Layanan tidak ditemukan</div>
+                        <div style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">Kata kunci "<b>${query}</b>" tidak ada di database kami.</div>
+                        <div style="font-size: 13px; color: var(--text-light);">💡 Coba kata kunci umum seperti: <b>KTP</b>, <b>KK</b>, <b>Akta</b>, <b>Pindah</b>, <b>IKD</b></div>
+                    </div>
+                `, 'bot');
+            } else if (results.length === 1) {
+                if (typingDiv) { typingDiv.remove(); typingDiv = null; }
+                showDetail(results[0]);
+            } else {
+                let html = `
+                    <div>
+                        <div style="font-weight: 600; color: var(--primary); margin-bottom: 12px;">✅ Ditemukan ${results.length} layanan yang cocok</div>
+                        <div style="font-size: 13px; color: var(--text-light); margin-bottom: 12px;">Silakan pilih salah satu di bawah untuk melihat detail:</div>
+                        <div class="options-container">
+                `;
+                results.forEach((s, i) => {
+                    html += `<button class=\"option-btn\" onclick=\"showDetailByIndex(${i}, '${norm(query)}')\" style=\"flex: 1; min-width: 150px; white-space: normal; line-height: 1.4;\">${s.title}</button>`;
+                });
+                html += `</div></div>`;
+                if (typingDiv) { typingDiv.remove(); typingDiv = null; }
+                addMessage(html, 'bot');
+            }
+            if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '1'; }
+            userInput.disabled = false;
+        }
+
+        function showDetailByIndex(index, query) {
+            function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9\s]/g,'').trim(); }
+            function lev(a,b){ const m=a.length,n=b.length; const dp=Array.from({length:m+1},()=>Array(n+1).fill(0)); for(let i=0;i<=m;i++) dp[i][0]=i; for(let j=0;j<=n;j++) dp[0][j]=j; for(let i=1;i<=m;i++){ for(let j=1;j<=n;j++){ const cost=a[i-1]===b[j-1]?0:1; dp[i][j]=Math.min(dp[i-1][j]+1, dp[i][j-1]+1, dp[i-1][j-1]+cost); } } return dp[m][n]; }
+            function scoreSvc(s, q){ const qTokens=norm(q).split(/\s+/).filter(Boolean); const title=norm(s.title); const keys=(s.keywords||[]).map(norm); let score=0; qTokens.forEach(t=>{ if(!t) return; const direct = title.includes(t) || keys.some(k=>k.includes(t)); if(direct) { score+=3; return; } const near = Math.min(lev(title,t), ...keys.map(k=>lev(k,t))) <= 2; if(near) score+=2; }); return score; }
+            const results = getAllServices().map(s=>({svc:s,score:scoreSvc(s,query)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).map(x=>x.svc);
+            resetChatForNewQuery();
+            showDetail(results[index]);
+        }
+
+        // Tampilkan menu utama layanan sebagai pesan bot (dipanggil oleh tombol Kembali)
+        function showMainMenu() {
+            // Reset chat agar percakapan tidak terus memanjang
+            chatBox.innerHTML = '';
+
+            // Tampilkan menu ringkas (hanya sejumlah tombol) + kotak pencarian
+            const visibleCount = 12;
+            const searchHtml = `
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <input id="menuSearch" placeholder="Cari layanan..." style="flex:1; padding:10px 12px; border:2px solid var(--border-color); border-radius:8px; outline:none;">
+                    <button class="option-btn" style="padding:10px 14px;" onclick="doMenuSearch()">Cari</button>
+                </div>
+            `;
+
+            const all = getAllServices();
+             const buttons = all.slice(0, visibleCount).map(s => {
+                 const safeTitle = s.title.replace(/'/g, "\\'");
+                 const meta = pickIconMeta(s.title);
+                 return `<button class="option-btn anim-bounce" onclick="handleOption('${safeTitle}')" style="display:flex;align-items:center;gap:8px;justify-content:center;"><span class=\"icon-wrap ${meta.palette}\"><img class=\"icon\" src=\"${meta.icon}\" alt=\"\">${meta.badgeClass?`<span class=\"icon-badge ${meta.badgeClass}\">${meta.badgeText}</span>`:''}</span> ${s.title}${s.isFree ? ' 🆓' : ''}</button>`;
+             }).join('');
+            const html = `
+                <div>
+                    <div style="font-weight:700; color:var(--primary); margin-bottom:12px;">📚 Menu Layanan</div>
+                    ${searchHtml}
+                    <div class="options-container">${buttons}</div>
+                    <div style="display:flex; gap:8px; margin-top:12px;">
+                        <button class="option-btn" onclick="showAllServices()" style="flex:1;">📂 Tampilkan Semua Layanan</button>
+                        <button class="option-btn" onclick="showFreeServices()" style="flex:1;">🆓 Layanan Gratis</button>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                         <button class="option-btn" onclick="window.forceResetSession()" style="flex:1;background:#fff3e0;color:#e65100;">📝 Isi Ulang Data Warga</button>
+                         <button class="option-btn" onclick="showMainMenu()" style="flex:1;">🔄 Segarkan</button>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-light); margin-top:8px;">Ketik kata kunci untuk pencarian atau pilih layanan di atas.</div>
+                </div>
+            `;
+            addMessage(html, 'bot');
+
+            // Enter untuk pencarian cepat
+            setTimeout(() => {
+                const inp = document.getElementById('menuSearch');
+                if (inp) inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') doMenuSearch(); });
+            }, 50);
+        }
+
+        function doMenuSearch() {
+            if (!isOnboarded()) { openCitizenForm(); addMessage('Silakan isi Form Warga terlebih dahulu.', 'bot'); return; }
+            const qEl = document.getElementById('menuSearch');
+            if (!qEl) return;
+            const q = qEl.value.trim();
+            if (!q) return;
+            resetChatForNewQuery();
+            addMessage(q, 'user');
+            trackEvent({ event_type:'search', query_text: q });
+            processQuery(q);
+        }
+
+        function showAllServices() {
+            if (!isOnboarded()) { openCitizenForm(); addMessage('Silakan isi Form Warga terlebih dahulu.', 'bot'); return; }
+            // Tampilkan seluruh daftar tapi tetap ringkas (tombol saja)
+            chatBox.innerHTML = '';
+            const all = getAllServices();
+            const buttons = all.map(s => {
+                const safeTitle = s.title.replace(/'/g, "\\'");
+                const meta = pickIconMeta(s.title);
+                return `<button class=\"option-btn anim-bounce\" onclick=\"handleOption('${safeTitle}')\" style=\"display:flex;align-items:center;gap:8px;justify-content:center;\"><span class=\"icon-wrap ${meta.palette}\"><img class=\"icon\" src=\"${meta.icon}\" alt=\"\">${meta.badgeClass?`<span class=\"icon-badge ${meta.badgeClass}\">${meta.badgeText}</span>`:''}</span> ${s.title}${s.isFree ? ' 🆓' : ''}</button>`;
+            }).join('');
+            const html = `
+                <div>
+                    <div style="font-weight:700; color:var(--primary); margin-bottom:12px;">📂 Semua Layanan</div>
+                    <div class="options-container" style="max-height:60vh; overflow:auto; padding-right:6px;">${buttons}</div>
+                    <div style="display:flex; gap:8px; margin-top:12px;"><button class="option-btn" onclick="showMainMenu()" style="flex:1;">⟲ Kembali</button></div>
+                </div>
+            `;
+            addMessage(html, 'bot');
+        }
+        function showFreeServices() {
+            if (!isOnboarded()) { openCitizenForm(); addMessage('Silakan isi Form Warga terlebih dahulu.', 'bot'); return; }
+            chatBox.innerHTML = '';
+            const free = getAllServices().filter(s => s.isFree);
+            const buttons = free.length ? free.map(s => {
+                const safeTitle = s.title.replace(/'/g, "\\'");
+                const meta = pickIconMeta(s.title);
+                return `<button class=\"option-btn anim-bounce\" onclick=\"handleOption('${safeTitle}')\" style=\"display:flex;align-items:center;gap:8px;justify-content:center;\"><span class=\"icon-wrap ${meta.palette}\"><img class=\"icon\" src=\"${meta.icon}\" alt=\"\">${meta.badgeClass?`<span class=\"icon-badge ${meta.badgeClass}\">${meta.badgeText}</span>`:''}</span> ${s.title} 🆓</button>`;
+            }).join('') :
+                `<div style="font-size:13px; color:var(--text-light);">Belum ada layanan ditandai gratis.</div>`;
+            const html = `
+                <div>
+                    <div style="font-weight:700; color:var(--primary); margin-bottom:12px;">🆓 Layanan Gratis</div>
+                    <div class="options-container" style="max-height:60vh; overflow:auto; padding-right:6px;">${buttons}</div>
+                    <div style="display:flex; gap:8px; margin-top:12px;"><button class="option-btn" onclick="showMainMenu()" style="flex:1;">⟲ Kembali</button></div>
+                </div>
+            `;
+            addMessage(html, 'bot');
+        }
+
+        function showDetail(service) {
+            trackEvent({ event_type:'view_detail', service_title: service.title });
+            const reqList = service.requirements.map((r, i) => `<li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;"><div style="flex-shrink: 0; font-weight: 600; color: var(--accent); line-height: 1.5;">✓</div><div style="flex: 1; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; white-space: normal; line-height: 1.5;">${r}</div></li>`).join('');
+            const procList = service.procedure.map((p, i) => `<li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;"><div style="flex-shrink: 0; font-weight: 700; background: var(--accent); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; margin-top: 2px;">${i+1}</div><div style="flex: 1; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; white-space: normal; line-height: 1.5;">${p}</div></li>`).join('');
+            const procOnlineList = service.procedureOnline ? service.procedureOnline.map((p, i) => `<li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;"><div style="flex-shrink: 0; font-weight: 700; background: #2196F3; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; margin-top: 2px;">${i+1}</div><div style="flex: 1; min-width: 0; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; white-space: normal; line-height: 1.5;">${p}</div></li>`).join('') : '';
+            
+            const waMsg = `Halo Admin Dayeuhkolot BEDAS SERVE! Saya mau urus: ${service.title}. Bisa bantu? 😊`;
+            const waLink = `https://wa.me/${adminPhoneNumber}?text=${encodeURIComponent(waMsg)}`;
+            const deepLink = makeDeepLink(service.title);
+            const baseId = `sec_${Date.now()}_${Math.floor(Math.random()*1000)}`;
+            const reqId = `${baseId}_req`;
+            const procId = `${baseId}_proc`;
+            const onlineId = `${baseId}_online`;
+            const sysId = `${baseId}_sys`;
+            const tplId = `${baseId}_tpl`;
+            const tplList = Array.isArray(service.templates) && service.templates.length > 0
+                ? service.templates.map((t, i) => {
+                    const idx = i + 1;
+                    const safeUrl = encodeURI(t.url);
+                    return `<li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;">
+                        <div style="flex-shrink: 0; font-weight: 700; background: #FF9800; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; margin-top: 2px;">${idx}</div>
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+                            <span style="font-weight:600; color:#333; font-size:13px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; white-space: normal; line-height: 1.4;">${t.title}</span>
+                            <div>
+                                <a href="${safeUrl}" download target="_blank" style="display:inline-flex; align-items:center; gap:4px; background:#4CAF50; color:white; padding:4px 12px; border-radius:15px; text-decoration:none; font-size:11px; font-weight:600; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                    Unduh Disini
+                                </a>
+                            </div>
+                        </div>
+                    </li>`;
+                }).join('')
+                : '';
+
+            const chips = [];
+            if (service.keywords && service.keywords.length) chips.push(...service.keywords);
+            if (service.isFree) chips.push('Gratis');
+            const chipsHtml = chips.length ? `<div class="chips">${chips.map(k => `<span class="chip">${k}</span>`).join('')}</div>` : '';
+            
+            const safeTitle = service.title.replace(/'/g, "\\'");
+            let html = `
+                <div style="display: grid; gap: 8px;">
+                    <div style="padding-bottom: 8px; border-bottom: 2px solid var(--border-color); margin-bottom: 4px;">
+                        <h3 style="margin: 0; font-size: 17px; color: var(--primary); font-weight: 700; word-wrap: break-word; line-height: 1.4;">📋 ${service.title}</h3>
+                    </div>
+                    ${chipsHtml}
+                    
+                    <div class="detail-card" style="background: linear-gradient(135deg, rgba(0, 137, 123, 0.06), rgba(0, 105, 92, 0.01)); margin: 8px 0; padding: 10px 10px; border-radius: 8px; border-left: 5px solid var(--accent);">
+                        <div onclick="toggleSection('${reqId}')" data-section="${reqId}" style="font-weight: 700; color: var(--primary); margin-bottom: 8px; font-size: 14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <span id="chev_${reqId}">▾</span> 1️⃣ Persyaratan
+                        </div>
+                        <div id="${reqId}" style="display:block;">
+                            <ul style="margin: 0; padding-left: 0; list-style: none; font-size: 13px;">${reqList}</ul>
+                        </div>
+                    </div>
+
+                    <div class="detail-card" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.08), rgba(255, 193, 7, 0.02)); margin: 8px 0; padding: 10px 10px; border-radius: 8px; border-left: 5px solid #FFA726;">
+                        <div onclick="toggleSection('${procId}')" data-section="${procId}" style="font-weight: 700; color: #E65100; margin-bottom: 8px; font-size: 14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <span id="chev_${procId}">▸</span> 2️⃣ Alur / Penjelasan
+                        </div>
+                        <div id="${procId}" style="display:none;">
+                            <ul style="margin: 0; padding-left: 0; list-style: none; font-size: 13px;">${procList}</ul>
+                        </div>
+                    </div>
+            `;
+
+            if (service.procedureOnline && service.procedureOnline.length > 0) {
+                html += `
+                    <div class="detail-card" style="background: linear-gradient(135deg, rgba(33, 150, 243, 0.08), rgba(25, 103, 210, 0.02)); margin: 8px 0; padding: 10px 10px; border-radius: 8px; border-left: 5px solid #2196F3;">
+                        <div onclick="toggleSection('${onlineId}')" data-section="${onlineId}" style="font-weight: 700; color: #1565C0; margin-bottom: 8px; font-size: 14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <span id="chev_${onlineId}">▸</span> 3️⃣ Alur Mekanisme Jika Online
+                        </div>
+                        <div id="${onlineId}" style="display:none;">
+                            <ul style="margin: 0; padding-left: 0; list-style: none; font-size: 13px;">${procOnlineList}</ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (service.system && service.system.length > 0) {
+                const systemList = service.system.map((s, i) => {
+                    const isUrl = /^(https?:\/\/|www\.)/i.test(s);
+                    const href = isUrl ? (s.startsWith('http') ? s : `https://${s}`) : '';
+                    const content = isUrl ? `<a href="${href}" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline; word-break: break-all; overflow-wrap: break-word;">${s}</a>` : `<span style="overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; min-width: 0; white-space: normal;">${s}</span>`;
+                    return `<li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;"><div style="flex-shrink: 0; font-weight: 700; background: #9C27B0; color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; margin-top: 2px;">${i+1}</div><div style="flex: 1; min-width: 0; line-height: 1.5;">${content}</div></li>`;
+                }).join('');
+                html += `
+                    <div class="detail-card" style="background: linear-gradient(135deg, rgba(156, 39, 176, 0.08), rgba(123, 31, 162, 0.02)); margin: 8px 0; padding: 10px 10px; border-radius: 8px; border-left: 5px solid #9C27B0;">
+                        <div onclick="toggleSection('${sysId}')" data-section="${sysId}" style="font-weight: 700; color: #7B1FA2; margin-bottom: 8px; font-size: 14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <span id="chev_${sysId}">▸</span> 4️⃣ Sistem/Tautan
+                        </div>
+                        <div id="${sysId}" style="display:none;">
+                            <ul style="margin: 0; padding-left: 0; list-style: none; font-size: 13px;">${systemList}</ul>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (tplList) {
+                html += `
+                    <div class="detail-card" style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.08), rgba(255, 152, 0, 0.02)); margin: 8px 0; padding: 10px 10px; border-radius: 8px; border-left: 5px solid #FF9800;">
+                        <div onclick="toggleSection('${tplId}')" data-section="${tplId}" style="font-weight: 700; color: #B45309; margin-bottom: 8px; font-size: 14px; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                            <span id="chev_${tplId}">▸</span> 5️⃣ Template Surat Terkait
+                        </div>
+                        <div id="${tplId}" style="display:none;">
+                            <ul style="margin: 0; padding-left: 0; list-style: none; font-size: 13px;">${tplList}</ul>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                    <div class="action-buttons" style="display:flex; gap:10px; align-items:center;">
+                        <button class="option-btn" onclick="showMainMenu()" style="flex:1; min-width:150px; background:var(--primary); color:white;">⟲ Kembali ke Menu</button>
+                        <button class="option-btn" onclick="openCitizenFormPrefill('${safeTitle}')" style="flex:1; min-width:150px;">📝 Isi Form Warga</button>
+                        <a href="${deepLink}" class="deep-link-btn" aria-label="BEDAS APK" title="BEDAS APK" style="flex:1; min-width:150px;">
+                            <img src="images/BEDASAPK.pnb" alt="Logo BEDAS APK" class="apk-logo" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='images/BEDASAPK.png'">
+                            <span class="apk-label">BEDAS APK</span>
+                        </a>
+                        <a href="${waLink}" class="option-btn" target="_blank" onclick="trackEvent({ event_type:'contact_admin', service_title: '${safeTitle}' })" style="background: var(--wa-color); color: white; text-align: center; padding: 12px; border-radius: 12px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s;">💬 Hubungi Admin via WhatsApp</a>
+                        ${location.search.includes('admin=1') ? `<button class="option-btn" onclick="openInlineEdit('${safeTitle}')" style="min-width:150px;">✎ Edit Layanan</button>` : ''}
+                    </div>
+                </div>
+            `;
+            addMessage(html, 'bot');
+        }
+        
+        function openInlineEdit(serviceTitle) {
+            const idx = getAllServices().findIndex(s => s.title === serviceTitle);
+            if (idx < 0) return;
+            const svc = getAllServices()[idx];
+            const cont = document.createElement('div');
+            cont.style.cssText = 'background:#fff;border:1px solid rgba(0,0,0,0.1);border-radius:12px;padding:12px;margin:10px 0;';
+            const avTpl = availableTemplatesFor(svc.title);
+            const currentTplUrls = (svc.templates||[]).map(t => t.url);
+            const tplChecks = avTpl.map(t => {
+                const checked = currentTplUrls.includes(t.url) ? 'checked' : '';
+                return `<label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" name="admTpl" value="${t.url}" ${checked}> <span>${t.title}</span></label>`;
+            }).join('');
+            cont.innerHTML = `
+                <div style="font-weight:700;margin-bottom:8px;">Admin: Edit Layanan</div>
+                <label style="display:block;margin-bottom:6px;">Judul:<br><input id="admTitle" value="${svc.title}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;"></label>
+                <label style="display:block;margin-bottom:6px;">Persyaratan (satu per baris):<br><textarea id="admReq" rows="6" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;">${(svc.requirements||[]).join('\\n')}</textarea></label>
+                <div style="margin:10px 0;">
+                    <div style="font-weight:700;margin-bottom:6px;">Templates:</div>
+                    <div style="display:grid;grid-template-columns:1fr;gap:6px;">${tplChecks}</div>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button class="option-btn" id="admSave">Simpan</button>
+                    <button class="option-btn" id="admCancel">Batal</button>
+                </div>
+            `;
+            document.querySelector('.messages-card')?.appendChild(cont);
+            cont.querySelector('#admCancel').addEventListener('click', () => cont.remove());
+            cont.querySelector('#admSave').addEventListener('click', () => {
+                const newTitle = cont.querySelector('#admTitle').value.trim();
+                const newReq = cont.querySelector('#admReq').value.split('\n').map(s => s.trim()).filter(Boolean);
+                const all = getAllServices();
+                all[idx].title = newTitle || all[idx].title;
+                all[idx].requirements = newReq;
+                const selectedTplUrls = Array.from(cont.querySelectorAll('input[name="admTpl"]:checked')).map(el => el.value);
+                all[idx].templates = avTpl.filter(t => selectedTplUrls.includes(t.url));
+                localStorage.setItem('bedas_services_db', JSON.stringify(all));
+                addMessage('<div style="color:#2e7d32;">✅ Layanan diperbarui.</div>', 'bot');
+                showDetail(all[idx]);
+                cont.remove();
+            });
+        }
+
+    </script>
+    <script>
+      initServiceDB(); // Initialize DB on load
+
+      // Ensure suggestions are ready
+      setTimeout(refreshSuggestions, 1000);
+
+      // Setup Service Browser in Form
+      const browseBtn = document.getElementById('browseServicesBtn');
+      const browseList = document.getElementById('serviceBrowseList');
+      if(browseBtn && browseList){
+          browseBtn.addEventListener('click', (e) => {
+              e.preventDefault();
+              const show = browseList.style.display === 'none';
+              browseList.style.display = show ? 'grid' : 'none';
+              browseList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
+              browseList.style.gap = '6px';
+              
+              if(show && !browseList.hasChildNodes()){
+                  const svcs = getAllServices();
+                  browseList.innerHTML = svcs.map(s => 
+                      `<div onclick="selectServiceFromBrowse('${s.title}')" style="cursor:pointer; padding:6px; background:#f5f5f5; border-radius:6px; text-align:center; border:1px solid #ddd; font-size:11px;">${s.title}</div>`
+                  ).join('');
+              }
+          });
+      }
+      window.selectServiceFromBrowse = function(title){
+          const el = document.getElementById('cfLayanan');
+          if(el) el.value = title;
+          document.getElementById('serviceBrowseList').style.display = 'none';
+      };
+
+      // Update service count automatically
+      function updateServiceCountDisplay() {
+        const count = getAllServices().length;
+        const el = document.getElementById('serviceCountDisplay');
+        if(el) el.textContent = count;
+      }
+      updateServiceCountDisplay();
+
+      // --- CITIZEN SESSION MANAGEMENT ---
+      const FORM_VALIDITY_MS = 10 * 60 * 1000; // 10 minutes
+
+      function checkFormSession() {
+          const lastTs = localStorage.getItem('bedas_last_submission_ts');
+          const now = Date.now();
+          const done = localStorage.getItem('bedas_onboarding_done');
+          const userInput = document.getElementById('userInput');
+          const sendBtn = document.querySelector('.input-area button');
+          
+          if (!done || !lastTs || (now - parseInt(lastTs, 10) > FORM_VALIDITY_MS)) {
+             // Session expired or never submitted -> Enforce Form
+             if (typeof openCitizenForm === 'function') {
+                 openCitizenForm();
+                 const closeBtn = document.getElementById('closeCitizenForm');
+                 if(closeBtn) closeBtn.style.display = 'none'; // Force
+             }
+             if(userInput) { userInput.disabled = true; userInput.placeholder = 'Isi data warga dulu...'; }
+             if(sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '0.6'; }
+          } else {
+             // Valid session
+             if(userInput) { userInput.disabled = false; userInput.placeholder = 'Ketik layanan (cth: IKD)...'; }
+             if(sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '1'; }
+             
+             if(typeof checkPendingSubmission === 'function') checkPendingSubmission();
+
+             // Show welcome back message
+             const profile = JSON.parse(localStorage.getItem('bedas_user_profile') || '{}');
+             const name = (profile.nama || 'Warga').split(' ')[0];
+             // Only show if chat is empty to avoid spamming on reload
+             const chatBox = document.getElementById('chatBox');
+             if(chatBox && chatBox.children.length === 0) {
+                 const elapsed = now - parseInt(lastTs, 10);
+                 const remainingMins = Math.ceil((FORM_VALIDITY_MS - elapsed) / 60000);
+                 addMessage(`Halo kembali, <b>${name}</b>! 👋<br>Sesi Anda masih aktif (${remainingMins} menit lagi). Silakan lanjutkan.`, 'bot');
+             }
+          }
+          
+          // Set timer for next expiration
+          if (lastTs) {
+              const elapsed = now - parseInt(lastTs, 10);
+              const remaining = FORM_VALIDITY_MS - elapsed;
+              if (remaining > 0) {
+                  setTimeout(() => {
+                      // Time's up! Show form again.
+                      openCitizenForm();
+                      const closeBtn = document.getElementById('closeCitizenForm');
+                      if(closeBtn) closeBtn.style.display = 'none';
+                      addMessage('<div>⏳ Sesi pengisian data Anda telah berakhir.<br>Mohon isi ulang data untuk melanjutkan.</div>', 'bot');
+                      if(userInput) { userInput.disabled = true; userInput.placeholder = 'Sesi habis...'; }
+                  }, remaining);
+              }
+          }
+      }
+
+      // DEBUG: Force Reset Session
+      window.forceResetSession = function() {
+          localStorage.removeItem('bedas_onboarding_done');
+          localStorage.removeItem('bedas_last_submission_ts');
+          location.reload();
+      };
+
+      window.addEventListener('load', () => {
+         setTimeout(checkFormSession, 800);
+      });
+    </script>
+</body>
+</html>

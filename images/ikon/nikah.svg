@@ -1,0 +1,15 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="docGradNikah" x1="32" y1="12" x2="32" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A7C1FF"/>
+      <stop offset="1" stop-color="#1E3A8A" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 12H84L104 32V116H32V12Z" fill="url(#docGradNikah)" stroke="#1E3A8A" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M84 12V32H104" stroke="#1E3A8A" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="58" cy="64" r="14" stroke="#0B1F4A" stroke-width="6"/>
+  <circle cx="78" cy="64" r="14" stroke="#0B1F4A" stroke-width="6"/>
+  <path d="M68 50C68 50 64 46 60 48C56 50 56 54 68 62C80 54 80 50 76 48C72 46 68 50 68 50Z" fill="#ffffff" stroke="#0B1F4A" stroke-width="3.2"/>
+  <line x1="48" y1="92" x2="88" y2="92" stroke="#1E3A8A" stroke-width="3" stroke-linecap="round"/>
+  <line x1="48" y1="102" x2="78" y2="102" stroke="#1E3A8A" stroke-width="3" stroke-linecap="round"/>
+</svg>

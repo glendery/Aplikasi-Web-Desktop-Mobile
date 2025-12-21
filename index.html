@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dayeuhkolot Bedas Serve – Kecamatan Dayeuhkolot</title>
+    <meta name="theme-color" content="#058a83">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="images/ikon.png">
+    <link rel="manifest" href="manifest.webmanifest">
+
+    <link rel="icon" type="image/png" href="images/ikon.png">
+    <link rel="stylesheet" href="styles.css?v=20251220-mobile-fix-scroll">
+    
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header class="header">
+    <div class="header-left">
+
+        <img class="brand-logo-left" src="images/kecamatan.png" alt="Logo apk ini">
+        <img class="brand-logo-left logo-slogan" src="images/slogan2.png" alt="Logo apk ini">       
+        <div class="brand-text">
+            <h1 class="brand-title">Dayeuhkolot Bedas Serve</h1>
+            <p class="brand-subtitle">Pelayanan Terpadu Kecamatan Dayeuhkolot</p>
+        </div>
+    </div>
+
+    <button class="menu-toggle" id="menuToggle">☰</button>
+    <nav class="nav">
+        <a href="#hero">Beranda</a>
+        <a href="#statistik">Statistik</a>
+        <a href="#akses">Akses Cepat</a>
+        <a href="#layanan">Layanan</a>
+        <a href="#faq">FAQ</a>
+        <a href="#lokasi">Lokasi</a>
+    </nav>
+
+  <div class="header-right">
+    <a href="chat.html" class="btn-cta">Mulai Chat</a>
+    <button class="theme-toggle" id="themeToggle">🎨</button>
+    <button class="a11y-toggle" id="a11yToggle" title="Mode Kontras Tinggi">♿</button>
+    <div id="a11yBubble" class="a11y-bubble" role="status" aria-live="polite">
+      <span class="bubble-text">Mode Kontras Tinggi tersedia. Klik ♿ untuk tampilan jelas.</span>
+      <button class="bubble-close" id="bubbleClose" aria-label="Tutup">×</button>
+    </div>
+    <a href="login.html" class="admin-login-btn" title="Login Admin" aria-label="Login Admin">🔒</a>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero motif-layered" id="hero">
+    <div class="hero-inner">
+        <div class="hero-content">
+            <div class="hero-row">
+              <div class="hero-figure">
+                <div id="heroCamat" class="hero-camat-container"></div>
+              </div>
+              <div class="hero-text">
+                <div class="hero-panel">
+                  <div class="panel-content">
+                    <h1><span>Pelayanan Publik</span><br><span>Berbasis Digital</span></h1>
+                    <p class="hero-description">
+                        BEDAS SERVE hadir untuk memberikan kemudahan akses informasi dan
+                        layanan administrasi kependudukan secara cepat, transparan, dan modern.
+                    </p>
+                    <a href="chat.html" class="btn-cta"><span class="btn-title">Mulai Konsultasi</span></a>
+                    <div class="hero-center">
+                      <div class="hero-mini-row">
+                        <div class="mini-card">
+                          <div class="mini-title">Jam Operasional</div>
+                          <div class="mini-body">Senin–Jumat • 08.00–15.30 WIB</div>
+                          <a class="mini-link" href="#lokasi">Lihat Lokasi</a>
+                        </div>
+                        <div class="mini-card">
+                          <div class="mini-title">Hubungi WhatsApp</div>
+                          <div class="mini-body">Admin Dayeuhkolot</div>
+                          <a class="mini-link" href="https://wa.me/6281234567890?text=Halo%20BEDAS%20SERVE">Chat Sekarang</a>
+                        </div>
+                        <div class="mini-card">
+                          <div class="mini-title">Formulir & Persyaratan</div>
+                          <div class="mini-body">Panduan layanan KTP, KK, Akta</div>
+                          <a class="mini-link" href="chat.html?q=Panduan">Lihat Panduan</a>
+                        </div>
+                      </div>
+                      <div class="hero-slider">
+                        <span class="knob" aria-hidden="true"></span>
+                        <a href="#statistik" class="more-btn">Selengkapnya</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+    
+    </div>
+
+</section>
+
+ 
+
+ 
+
+<!-- ================= STATISTIK ================= -->
+<section class="stats-section" id="statistik">
+    <div class="stats-grid">
+        <div class="stat-item">
+            <h3 id="servedTotal">0</h3>
+            <p>Warga Terlayani</p>
+        </div>
+        <div class="stat-item">
+            <h3>45</h3>
+            <p>Jenis Layanan</p>
+        </div>
+        <div class="stat-item">
+            <h3>&le; 5 Menit</h3>
+            <p>Respon Awal</p>
+        </div>
+        <div class="stat-item">
+            <h3>24/7</h3>
+            <p>Layanan Online</p>
+        </div>
+    </div>
+</section>
+<script>
+  function normalizePhone(v){ const d=String(v||'').replace(/\D/g,''); if(!d) return ''; if(d.startsWith('62')) return d; if(d.startsWith('0')) return '62'+d.slice(1); return d; }
+  function isValidPhone(v){ const d=String(v||'').replace(/\D/g,''); if(!d) return false; const n=normalizePhone(d); return /^62\d{8,13}$/.test(n); }
+  function formatID(n){ return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+  function getSubmissions(){ try { return JSON.parse(localStorage.getItem('bedas_submissions')||'[]'); } catch(e){ return []; } }
+  function getServedTotal(){ try { return parseInt(localStorage.getItem('bedas_served_total')||'0',10)||0; } catch(e){ return 0; } }
+  function getServedIndex(){ try { return JSON.parse(localStorage.getItem('bedas_served_index')||'[]'); } catch(e){ return []; } }
+  function updateServedCard(){
+    const el=document.getElementById('servedTotal'); if(!el) return;
+    let current = 0;
+    try {
+      // Prioritaskan data permanen (statistik) agar tidak berkurang saat admin menghapus data
+      const stats = JSON.parse(localStorage.getItem('bedas_submissions_stats')||'[]');
+      current = stats.length;
+      if (current === 0) {
+        // Fallback ke data aktif jika statistik kosong
+        current = getSubmissions().length;
+      }
+    } catch(e) {
+      current = getSubmissions().length;
+    }
+
+    const last= parseInt(localStorage.getItem('bedas_served_display_last')||'0',10)||0;
+    if(current!==last){ el.classList.add('stat-change'); setTimeout(()=>{ el.classList.remove('stat-change'); }, 900); localStorage.setItem('bedas_served_display_last', String(current)); }
+    el.textContent = formatID(current);
+  }
+  
+  function initAutoScroll(){
+    const row = document.querySelector('.hero-mini-row');
+    if(!row) return;
+    
+    // Setup for seamless looping
+    row.style.overflowX = 'hidden'; // Hide native scrollbar
+    row.style.scrollSnapType = 'none'; // Disable snap for JS animation
+    
+    let isInteracting = false;
+    const pause = () => isInteracting = true;
+    const resume = () => isInteracting = false;
+    
+    // Pause on interaction
+    row.addEventListener('touchstart', pause);
+    row.addEventListener('touchend', () => setTimeout(resume, 3000));
+    row.addEventListener('mouseenter', pause);
+    row.addEventListener('mouseleave', resume);
+
+    setInterval(() => {
+      if(isInteracting) return;
+      
+      const firstCard = row.firstElementChild;
+      if(!firstCard) return;
+      
+      const gap = 12; // Matches CSS gap
+      const step = firstCard.offsetWidth + gap;
+      
+      // Animate: Slide Left + Fade Out
+      firstCard.style.transition = 'margin-left 0.8s ease-in-out, opacity 0.8s ease-in-out';
+      firstCard.style.marginLeft = `-${step}px`;
+      firstCard.style.opacity = '0';
+      
+      // After animation, move to end and reset
+      setTimeout(() => {
+        firstCard.style.transition = 'none';
+        firstCard.style.marginLeft = '0';
+        firstCard.style.opacity = '1';
+        row.appendChild(firstCard); // Move to end
+      }, 800); // Match transition duration
+      
+    }, 3000);
+  }
+
+  window.addEventListener('DOMContentLoaded', updateServedCard);
+  window.addEventListener('DOMContentLoaded', initAutoScroll);
+  window.addEventListener('storage', function(e){ if(['bedas_submissions','bedas_submissions_stats','bedas_served_total'].includes(e.key)) updateServedCard(); });
+</script>
+
+<!-- (dipindah di bawah Layanan Unggulan) -->
+
+<!-- ================= QUICK ACCESS ================= -->
+<section class="quick-access" id="akses">
+    <a href="chat.html">
+        <span>📄 Persyaratan KTP</span>
+        <small>Layanan Administrasi Kependudukan</small>
+    </a>
+    <a href="chat.html">
+        <span>📑 Persyaratan KK</span>
+        <small>Informasi Kartu Keluarga</small>
+    </a>
+    <a href="#">
+        <span>📝 Ajukan Pengaduan</span>
+        <small>Aspirasi & Pengaduan Masyarakat</small>
+    </a>
+</section>
+
+ 
+
+<section class="quick-faq">
+  <div class="quick-faq-inner">
+    <details class="faq-card">
+      <summary>
+        <span class="faq-title">Pembuatan KTP – Syarat</span>
+        <span class="faq-chev">▾</span>
+      </summary>
+      <div class="faq-body">
+        <ul class="faq-list">
+          <li>Usia 17 tahun/kawin/pernah kawin</li>
+          <li>Fotokopi KK</li>
+          <li>Datang ke Loket Disdukcapil/MPP</li>
+        </ul>
+        <div class="faq-actions">
+          <a class="mini-link" href="chat.html?q=KTP">Lihat panduan lengkap</a>
+        </div>
+      </div>
+    </details>
+    <details class="faq-card">
+      <summary>
+        <span class="faq-title">Perubahan Data KK – Langkah</span>
+        <span class="faq-chev">▾</span>
+      </summary>
+      <div class="faq-body">
+        <ul class="faq-list">
+          <li>KK lama</li>
+          <li>Bukti perubahan data (peristiwa kependudukan/penting)</li>
+          <li>Isi F-1.02 dan F-1.06</li>
+          <li>Ajukan di Loket Disdukcapil/MPP</li>
+        </ul>
+        <div class="faq-actions">
+          <a class="mini-link" href="chat.html?q=Perubahan%20Data%20KK">Lihat panduan lengkap</a>
+        </div>
+      </div>
+    </details>
+    <details class="faq-card">
+      <summary>
+        <span class="faq-title">Akta Kelahiran – Cara Urus</span>
+        <span class="faq-chev">▾</span>
+      </summary>
+      <div class="faq-body">
+        <ul class="faq-list">
+          <li>Surat keterangan kelahiran (RS/Puskesmas/Bidan/Desa)</li>
+          <li>Buku nikah/kutipan akta perkawinan</li>
+          <li>Fotokopi KK</li>
+          <li>SPTJM F-2.03 jika tidak ada surat lahir</li>
+        </ul>
+        <div class="faq-actions">
+          <a class="mini-link" href="chat.html?q=Akta%20Kelahiran">Lihat panduan lengkap</a>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ================= LAYANAN POPULER ================= -->
+<section class="popular-section">
+    <h2>Layanan Paling Banyak Diakses</h2>
+    <p class="section-desc">
+        Beberapa layanan yang paling sering dimanfaatkan masyarakat Kecamatan Dayeuhkolot.
+    </p>
+
+    <div class="popular-grid" id="popularContainer">
+        <!-- Content will be rendered by JS -->
+    </div>
+</section>
+
+<!-- ================= FITUR ================= -->
+<section class="features-section" id="layanan">
+    <div class="section-header">
+        <h2>Layanan Unggulan</h2>
+        <p>Kemudahan layanan dalam satu genggaman</p>
+    </div>
+
+    <div class="features-grid" id="featuredContainer">
+        <!-- Content will be rendered by JS -->
+    </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="faq-section" id="faq">
+    <h2>Pertanyaan yang Sering Diajukan</h2>
+
+    <details>
+        <summary>Apakah layanan BEDAS SERVE berbayar?</summary>
+        <p>
+            Tidak. Seluruh layanan administrasi kependudukan yang disediakan
+            Kecamatan Dayeuhkolot tidak dipungut biaya.
+        </p>
+    </details>
+
+    <details>
+        <summary>Jam operasional kantor kecamatan?</summary>
+        <p>
+            Pelayanan tatap muka dilaksanakan Senin–Jumat
+            pukul 08.00–15.30 WIB (sesuai ketentuan).
+        </p>
+    </details>
+
+    <details>
+        <summary>Apakah pengurusan dokumen bisa diwakilkan?</summary>
+        <p>
+            Bisa, dengan melampirkan surat kuasa dan dokumen pendukung yang sah.
+        </p>
+    </details>
+</section>
+
+<!-- ================= KOMITMEN ================= -->
+<section class="slogan-section">
+    <div class="wave-top-slogan">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+            <path fill="#e0f2f1"
+                d="M0,160L48,176C96,192,192,224,288,229.3
+                C384,235,480,213,576,192
+                C672,171,768,149,864,160
+                C960,171,1056,213,1152,213.3
+                C1248,213,1344,171,1392,149.3
+                L1440,128V320H0Z">
+            </path>
+        </svg>
+    </div>
+
+    <h2>Komitmen Pelayanan Kami</h2>
+
+    
+    <div class="slogan-carousel">
+      <div class="carousel-viewport slogan-viewport" tabindex="0" aria-label="Carousel Komitmen Pelayanan" data-group="komitmen">
+        <div class="slogan-track" data-group="komitmen">
+          <div class="carousel-slide active" data-card-group="komitmen" data-anim="fade" data-in-ms="1500" data-show-ms="5000">
+            <div class="rotator-inner center">
+              <img src="images/slogan3.png" alt="Bandung BEDAS" class="rotator-img" loading="eager" decoding="async">
+            </div>
+          </div>
+          <div class="carousel-slide" data-card-group="komitmen" data-anim="slide-left" data-in-ms="1200" data-show-ms="6000">
+            <div class="rotator-inner flex around">
+              <img src="images/logo pemkab.png" alt="Pemerintah Kab. Bandung" class="rotator-img" loading="lazy" decoding="async">
+              <img src="images/kecamatan.png" alt="Kecamatan Dayeuhkolot" class="rotator-img" loading="lazy" decoding="async">
+            </div>
+          </div>
+          <div class="carousel-slide" data-card-group="komitmen" data-anim="zoom" data-in-ms="1000" data-show-ms="4500">
+            <div class="rotator-inner center">
+              <img src="images/slogan1.png" alt="Bangga Melayani" class="rotator-img" loading="lazy" decoding="async">
+            </div>
+          </div>
+          <div class="carousel-slide" data-card-group="komitmen" data-anim="slide-up" data-in-ms="1300" data-show-ms="10000">
+            <div class="rotator-inner center akhlaq">
+              <img src="images/slogan.png" alt="BerAKHLAK" class="rotator-img" loading="lazy" decoding="async" onerror="this.src='images/slogan3.png'">
+            </div>
+          </div>
+        </div>
+        <button class="carousel-btn prev" aria-label="Sebelumnya">‹</button>
+        <button class="carousel-btn next" aria-label="Berikutnya">›</button>
+      </div>
+      <div class="carousel-dots slogan-dots" role="tablist" aria-label="Navigasi Carousel Komitmen"></div>
+    </div>
+</section>
+
+<!-- ================= MAP ================= -->
+<section class="map-section" id="lokasi">
+    <h2>Lokasi Kantor serta Pelayanan Kami</h2>
+    <div class="map-grid">
+      <div class="map-pane" style="position:relative">
+        <iframe 
+            src="peta.html"
+            title="Peta Interaktif Kecamatan Dayeuhkolot"
+            loading="lazy"
+            style="width:100%;height:100%;border:0;">
+        </iframe>
+        <a class="map-route-btn" href="https://www.google.com/maps/dir/?api=1&destination=-6.986040510947536,107.62522910432168" target="_blank" rel="noopener noreferrer" aria-label="Rute ke Kantor Kecamatan Dayeuhkolot">🗺️ Rute ke Kantor Kecamatan</a>
+        
+      </div>
+    </div>
+</section>
+
+ 
+
+ 
+
+<!-- ================= IKUTI KAMI ================= -->
+<section class="social-section" id="ikuti">
+  <h2>Ikuti Kami</h2>
+  <div class="social-carousel">
+    <div class="carousel-viewport" tabindex="0" aria-label="Carousel Ikuti Kami">
+      <div class="carousel-track">
+        <div class="carousel-slide">
+          <a class="social-card insta-card" href="https://www.instagram.com/kecamatandayeuhkolot/" target="_blank" rel="noopener noreferrer" aria-label="Instagram Kecamatan Dayeuhkolot">
+            <div class="social-preview">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" alt="Instagram" width="80" height="80" loading="lazy" decoding="async" fetchpriority="low">
+            </div>
+            <div class="social-info">
+              <h3>Instagram</h3>
+              <p>@kecamatandayeuhkolot</p>
+              <span class="mini-link">Follow</span>
+            </div>
+          </a>
+        </div>
+        <div class="carousel-slide">
+          <a class="social-card web-card" href="https://kecamatandayeuhkolot.bandungkab.go.id/" target="_blank" rel="noopener noreferrer" aria-label="Website Resmi Kecamatan Dayeuhkolot">
+            <div class="social-preview">
+              <img src="images/kecamatan.png" alt="Logo Kecamatan Dayeuhkolot" width="80" height="80" loading="lazy" decoding="async" fetchpriority="low">
+            </div>
+            <div class="social-info">
+              <h3>Website Resmi</h3>
+              <p>Informasi & Pengumuman</p>
+              <span class="mini-link">Buka Situs</span>
+            </div>
+          </a>
+        </div>
+        <div class="carousel-slide">
+          <a class="social-card tiktok-card" href="https://www.tiktok.com/@kecamatandayeuhkolot?_r=1&_t=ZS-92IIBK8UmpU" target="_blank" rel="noopener noreferrer" aria-label="TikTok Kecamatan Dayeuhkolot">
+            <div class="social-preview">
+              <img src="images/tiktok.png" alt="TikTok" width="80" height="80" loading="lazy" decoding="async" fetchpriority="low">
+            </div>
+            <div class="social-info">
+              <h3>TikTok</h3>
+              <p>@kecamatandayeuhkolot</p>
+              <span class="mini-link">Lihat Akun</span>
+            </div>
+          </a>
+        </div>
+        <div class="carousel-slide">
+          <a class="social-card naker-card" href="https://dashnaker.bandungkab.go.id/demo/" target="_blank" rel="noopener noreferrer" aria-label="Dashboard Ketenagakerjaan Kab. Bandung">
+            <div class="social-preview">
+              <img src="images/disnaker.jpg" alt="Info Resmi Lowongan Pekerjaan" width="80" height="80" loading="lazy" decoding="async" fetchpriority="low">
+            </div>
+            <div class="social-info">
+              <h3>Info Resmi Lowongan Pekerjaan</h3>
+              <p>Login atau Buat Akun </p>
+              <span class="mini-link">Buka</span>
+            </div>
+          </a>
+        </div>
+      </div>
+      <button class="carousel-btn prev" aria-label="Sebelumnya">‹</button>
+      <button class="carousel-btn next" aria-label="Berikutnya">›</button>
+      <div class="carousel-dots" role="tablist" aria-label="Navigasi Carousel"></div>
+    </div>
+    <noscript>
+      <div class="social-grid">
+        <a class="social-card insta-card" href="https://www.instagram.com/kecamatandayeuhkolot/" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a class="social-card web-card" href="https://kecamatandayeuhkolot.bandungkab.go.id/" target="_blank" rel="noopener noreferrer">Website Resmi</a>
+        <a class="social-card tiktok-card" href="https://www.tiktok.com/@kecamatandayeuhkolot?_r=1&_t=ZS-92IIBK8UmpU" target="_blank" rel="noopener noreferrer">TikTok</a>
+        <a class="social-card naker-card" href="https://dashnaker.bandungkab.go.id/demo/" target="_blank" rel="noopener noreferrer">Dinas Ketenagakerjaan</a>
+      </div>
+    </noscript>
+  </div>
+</section>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+    <p>&copy; 2025 Kecamatan Dayeuhkolot · Pemerintah Kabupaten Bandung</p>
+</footer>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- FLOATING WA -->
+<a href="https://wa.me/6281234567890?text=Halo%20BEDAS%20SERVE" class="floating-wa" aria-label="WhatsApp">
+  <img src="images/whatsapp.png" alt="WhatsApp" loading="lazy" decoding="async" fetchpriority="low" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg'">
+</a>
+<button class="back-to-top" id="backToTop">↑</button>
+
+
+<script>
+  const menuBtn = document.getElementById('menuToggle');
+  const headerEl = document.querySelector('.header');
+  const navLinks = document.querySelectorAll('.nav a');
+  const themeBtn = document.getElementById('themeToggle');
+  const a11yBtn = document.getElementById('a11yToggle');
+  const a11yBubble = document.getElementById('a11yBubble');
+  const bubbleClose = document.getElementById('bubbleClose');
+  const heroEl = document.getElementById('hero');
+  const sections = Array.from(navLinks).map(l => document.querySelector(l.getAttribute('href')));
+  const btt = document.getElementById('backToTop');
+
+  if (menuBtn) {
+    menuBtn.addEventListener('click', () => headerEl.classList.toggle('nav-open'));
+  }
+  navLinks.forEach(l => l.addEventListener('click', () => headerEl.classList.remove('nav-open')));
+
+  function setActiveLink() {
+    const scrollY = window.pageYOffset;
+    let activeIndex = 0;
+    
+    // Check if bottom of page is reached
+    if ((window.innerHeight + scrollY) >= document.body.offsetHeight - 50) {
+        activeIndex = sections.length - 1;
+    } else {
+        sections.forEach((sec, i) => {
+            if (!sec) return;
+            // Use a slightly larger offset to ensure the section is considered "entered"
+            // even if it's just a pixel below the exact scroll target.
+            // 150 accounts for header height + some buffer.
+            const top = sec.offsetTop - 180; 
+            if (scrollY >= top) activeIndex = i;
+        });
+    }
+    
+    navLinks.forEach((l, i) => l.classList.toggle('active', i === activeIndex));
+  }
+  
+  // Add click listener to instantly set active state
+  navLinks.forEach((l, i) => {
+      l.addEventListener('click', (e) => {
+          // Remove active from all
+          navLinks.forEach(link => link.classList.remove('active'));
+          // Add to clicked
+          l.classList.add('active');
+          
+          // Optional: Smooth scroll on mobile can sometimes lag the scroll event
+          // so we rely on this immediate feedback.
+      });
+  });
+
+  window.addEventListener('scroll', setActiveLink);
+  window.addEventListener('load', setActiveLink);
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('theme-alt');
+        localStorage.setItem('bedas_theme', document.body.classList.contains('theme-alt') ? 'alt' : 'default');
+    });
+    if (localStorage.getItem('bedas_theme') === 'alt') {
+        document.body.classList.add('theme-alt');
+    }
+  }
+  if (a11yBtn) {
+    a11yBtn.addEventListener('click', () => {
+        const isSafe = document.body.classList.toggle('color-safe');
+        localStorage.setItem('bedas_a11y_mode', isSafe ? 'enabled' : 'disabled');
+        if (isSafe) showToast('Mode Buta Warna / Kontras Tinggi Aktif', 'success');
+        else showToast('Mode Normal Aktif', 'info');
+    });
+    // Check on load
+    if (localStorage.getItem('bedas_a11y_mode') === 'enabled') {
+        document.body.classList.add('color-safe');
+    }
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'bedas_a11y_mode') {
+            document.body.classList.toggle('color-safe', e.newValue === 'enabled');
+        }
+    });
+
+    // --- Featured Services Logic ---
+    (function renderFeaturedServices() {
+        // ... (Existing code for featured services) ...
+        const container = document.getElementById('featuredContainer');
+        if (!container) return;
+
+        const defaultServices = [
+            {
+                id: '1',
+                icon: '🤖',
+                title: 'Asisten Virtual',
+                desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.'
+            },
+            {
+                id: '2',
+                icon: '📄',
+                title: 'Database Layanan Lengkap',
+                desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.'
+            },
+            {
+                id: '3',
+                icon: '📱',
+                title: 'Terintegrasi WhatsApp',
+                desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.'
+            }
+        ];
+
+        let services = [];
+        try {
+            const stored = localStorage.getItem('bedas_featured_services');
+            if (stored) services = JSON.parse(stored);
+        } catch (e) { console.error('Error parsing featured services', e); }
+
+        if (services.length === 0) {
+            services = defaultServices;
+            localStorage.setItem('bedas_featured_services', JSON.stringify(services));
+        }
+
+        container.innerHTML = services.map(s => {
+            const isImg = s.icon.match(/^(http|data:|images\/)/);
+            const iconHtml = isImg 
+                ? `<img src="${s.icon}" alt="${s.title}" style="width:48px;height:48px;object-fit:contain">` 
+                : s.icon;
+            return `
+            <div class="card shadow">
+                <span class="card-icon">${iconHtml}</span>
+                <h3>${s.title}</h3>
+                <p>${s.desc}</p>
+            </div>
+        `}).join('');
+    })();
+
+    // --- Popular Services Logic ---
+    (function renderPopularServices() {
+        const container = document.getElementById('popularContainer');
+        if (!container) return;
+
+        const defaultPopular = [
+            { id: '1', icon: 'images/ikon/ktp.svg', title: 'Pembuatan & Perubahan KTP' },
+            { id: '2', icon: 'images/ikon/kk.svg', title: 'Perubahan Data KK' },
+            { id: '3', icon: 'images/ikon/akta.svg', title: 'Akta Kelahiran' },
+            { id: '4', icon: 'images/ikon/domisili.svg', title: 'Surat Pindah Datang / Keluar' }
+        ];
+
+        let services = [];
+        try {
+            const stored = localStorage.getItem('bedas_popular_services');
+            if (stored) services = JSON.parse(stored);
+        } catch (e) { console.error('Error parsing popular services', e); }
+
+        if (services.length === 0) {
+            services = defaultPopular;
+            localStorage.setItem('bedas_popular_services', JSON.stringify(services));
+        }
+
+        container.innerHTML = services.map(s => `
+            <div>
+                <img src="${s.icon}" alt="" style="width:24px;vertical-align:middle;margin-right:8px;">
+                ${s.title}
+            </div>
+        `).join('');
+    })();
+  }
+  if (a11yBubble) {
+    a11yBubble.classList.add('show');
+    setTimeout(() => { a11yBubble.classList.remove('show'); }, 6000);
+  }
+  if (bubbleClose) {
+    bubbleClose.addEventListener('click', () => a11yBubble.classList.remove('show'));
+  }
+  (function handleGoto(){
+    const params = new URLSearchParams(location.search);
+    const goto = params.get('goto');
+    if (!goto) return;
+    const el = document.getElementById(goto);
+    if (!el) return;
+    const top = el.offsetTop - 90;
+    setTimeout(() => window.scrollTo({ top, behavior: 'smooth' }), 150);
+  })();
+  window.addEventListener('scroll', () => {
+    if (!btt) return;
+    btt.classList.toggle('show', window.pageYOffset > 400);
+  });
+  if (btt) {
+    btt.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+  if (navigator.connection && navigator.connection.saveData) { document.body.classList.add('save-data'); }
+  window.addEventListener('message', (e) => {
+    if (!e || !e.data) return;
+    if (e.data.type !== 'get-metrics') return;
+    const heroImg = document.querySelector('.hero-camat-inline');
+    const h1 = document.querySelector('.hero-content h1');
+    const navA = document.querySelector('.nav a');
+    const selectors = ['button','.btn-cta','.faq-card > summary','.quick-access a','.social-card','.nav a','.floating-wa','.back-to-top'];
+    let minTap = Infinity;
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        const r = el.getBoundingClientRect();
+        const s = Math.min(r.width, r.height);
+        if (s > 0) minTap = Math.min(minTap, s);
+      });
+    });
+    if (!isFinite(minTap)) minTap = 0;
+    const overflowX = document.documentElement.scrollWidth > document.documentElement.clientWidth;
+    const m = {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      currentSrc: heroImg ? heroImg.currentSrc : '',
+      h1Size: h1 ? getComputedStyle(h1).fontSize : '',
+      navSize: navA ? getComputedStyle(navA).fontSize : '',
+      minTap: Math.round(minTap),
+      overflowX,
+      dpr: window.devicePixelRatio || 1
+    };
+    if (window.parent) window.parent.postMessage({ type: 'metrics', payload: m }, '*');
+  });
+  function showToast(msg,type){const c=document.getElementById('toastContainer');if(!c)return;const t=document.createElement('div');t.className='toast '+(type||'');const i=document.createElement('img');i.src='images/ikon.png';t.appendChild(i);const s=document.createElement('div');s.textContent=msg;t.appendChild(s);c.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(10px)';setTimeout(()=>{t.remove();},300);},2600);}
+  function showLoading(text){const o=document.getElementById('loadingOverlay');const lt=document.getElementById('loadingText');if(lt) lt.textContent=text||'Memuat...';o.style.display='flex';}
+  function hideLoading(){const o=document.getElementById('loadingOverlay');o.style.display='none';}
+  // PWA install prompt dihilangkan sesuai permintaan
+  // no external link handler required
+  (function(){
+    const cont=document.getElementById('heroCamat');
+    const figure=document.querySelector('.hero-figure');
+    if(!cont) return;
+    function getGallery(){ try{const d=localStorage.getItem('bedas_gallery_db');if(d)return JSON.parse(d);return [];}catch(e){return [];} }
+    function getCfg(){ try{const d=localStorage.getItem('bedas_gallery_cfg');if(d)return JSON.parse(d);return {interval_ms:2500};}catch(e){return {interval_ms:2500};} }
+    const roleOrder={Camat:0,'Wakil Camat':1,Anggota:2};
+    let timer=null, idx=0, dataCache=[];
+    let prevBtn=null, nextBtn=null, dotsWrap=null;
+    function sortedData(){
+      const arr=getGallery();
+      // DEFAULT FALLBACK if empty: use Pak Camat default
+      if(!arr || arr.length === 0) {
+        return [{
+            id: 'default-camat',
+            name: 'Drs. H. Asep Wahyu, M.Si',
+            role: 'Camat',
+            position: 'Camat Dayeuhkolot',
+            image: 'images/camat.png',
+            tenure: '2023 - Sekarang'
+        }];
+      }
+      dataCache = arr.slice().sort((a,b)=>{
+        const ro=(roleOrder[a.position||a.role]??3)-(roleOrder[b.position||b.role]??3); if(ro!==0) return ro;
+        const ao=(a.order??0)-(b.order??0); if(ao!==0) return ao;
+        return (a.name||'').localeCompare(b.name||'');
+      }).filter(it=>it && it.image);
+      return dataCache;
+    }
+    function show(it){
+      const pre=new Image();
+      pre.className='hero-camat-inline';
+      pre.alt=(it.name||'') ? (it.name+' – '+(it.position||it.role||'')) : 'Pejabat Kecamatan';
+      pre.decoding='async';
+      pre.loading='eager';
+      pre.style.opacity='0';
+      const animMs=500;
+      pre.style.transition='opacity '+animMs+'ms ease-in-out';
+      pre.style.willChange='opacity';
+      pre.style.transform='translateZ(0)';
+      pre.src=it.image;
+      pre.onload=()=>{
+        const old=cont.firstChild;
+        if(old){
+          old.style.transition='opacity '+animMs+'ms ease-in-out';
+          old.style.opacity='0';
+          setTimeout(()=>{ if(old && old.parentNode===cont) cont.removeChild(old); }, animMs);
+        } else {
+          cont.innerHTML='';
+        }
+        const wrap=document.createElement('div');
+        wrap.className='hero-card';
+        wrap.appendChild(pre);
+        const cap=document.createElement('div');
+        cap.className='hero-caption';
+        const nm=document.createElement('div'); nm.className='name'; nm.textContent=it.name||'';
+        const pos=document.createElement('div'); pos.className='position'; pos.textContent=it.position||it.role||'';
+        const tn=document.createElement('div'); tn.className='tenure'; tn.textContent=it.tenure||'';
+        cap.appendChild(nm); cap.appendChild(pos); if(it.tenure) cap.appendChild(tn);
+        wrap.appendChild(cap);
+        cont.appendChild(wrap);
+        requestAnimationFrame(()=>{ pre.style.opacity='1'; });
+      };
+      updateDots();
+    }
+    function buildControls(){
+      if(!figure) return;
+      if(!prevBtn){
+        prevBtn=document.createElement('button'); prevBtn.className='hero-btn prev'; prevBtn.setAttribute('aria-label','Sebelumnya'); prevBtn.textContent='‹';
+        figure.appendChild(prevBtn);
+        prevBtn.addEventListener('click',()=>{ stopAuto(); prev(); startAuto(); });
+      }
+      if(!nextBtn){
+        nextBtn=document.createElement('button'); nextBtn.className='hero-btn next'; nextBtn.setAttribute('aria-label','Berikutnya'); nextBtn.textContent='›';
+        figure.appendChild(nextBtn);
+        nextBtn.addEventListener('click',()=>{ stopAuto(); next(); startAuto(); });
+      }
+      if(dotsWrap){ dotsWrap.parentNode && dotsWrap.parentNode.removeChild(dotsWrap); dotsWrap=null; }
+      cont.setAttribute('tabindex','0');
+      cont.addEventListener('keydown',(e)=>{ if(e.key==='ArrowLeft'){ stopAuto(); prev(); startAuto(); } if(e.key==='ArrowRight'){ stopAuto(); next(); startAuto(); } });
+    }
+    function updateDots(){
+      return;
+    }
+    function next(){ const d=sortedData(); if(!d.length) return; idx=(idx+1)%d.length; show(d[idx]); }
+    function prev(){ const d=sortedData(); if(!d.length) return; idx=(idx-1+d.length)%d.length; show(d[idx]); }
+    function stopAuto(){ if(timer){ clearInterval(timer); timer=null; } }
+    function startAuto(){ 
+      const ms=Math.max(5000, parseInt(getCfg().interval_ms||5000,10));
+      if(timer) clearInterval(timer);
+      timer=setInterval(()=>{ next(); }, ms);
+    }
+    function start(){
+      const data=sortedData();
+      if(!data.length){ cont.innerHTML=''; return; }
+      idx=idx%data.length;
+      show(data[idx]);
+      const ms=Math.max(5000, parseInt(getCfg().interval_ms||5000,10));
+      if(timer) clearInterval(timer);
+      timer=setInterval(()=>{ next(); }, ms);
+      buildControls();
+    }
+    start();
+    window.addEventListener('storage',(e)=>{ if(e.key==='bedas_gallery_db' || e.key==='bedas_gallery_cfg'){ start(); } });
+  })();
+  (function(){
+    const viewport=document.querySelector('.gallery-viewport');
+    const track=document.querySelector('.gallery-track');
+    if(!viewport||!track) return;
+    // Optional: check admin session to show inline edit links
+    const isAdmin = !!(window.AdminAuth && window.AdminAuth.checkSession && window.AdminAuth.checkSession());
+    function getGallery(){
+      try{const d=localStorage.getItem('bedas_gallery_db');if(d)return JSON.parse(d);return [];}catch(e){return [];}
+    }
+    function getGalleryCfg(){
+      try{const d=localStorage.getItem('bedas_gallery_cfg');if(d)return JSON.parse(d);return {interval_ms:2500};}catch(e){return {interval_ms:2500};}
+    }
+    const data=getGallery();
+    if(!data.length) return;
+    const roleOrder={Camat:0,'Wakil Camat':1,Anggota:2};
+    const sorted=data.slice().sort((a,b)=>{
+      const ro=(roleOrder[a.role]??3)-(roleOrder[b.role]??3);
+      if(ro!==0) return ro;
+      const ao=(a.order??0)-(b.order??0);
+      if(ao!==0) return ao;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    const baseCount=sorted.length;
+    sorted.forEach(it=>{
+      const s=document.createElement('div');
+      s.className='gallery-slide';
+      const card=document.createElement('div');
+      card.className='gallery-card';
+      const img=document.createElement('img');
+      img.src=it.image||'';
+      img.alt=it.name||'';
+      const info=document.createElement('div');
+      info.className='gallery-info';
+      const name=document.createElement('div');
+      name.className='name';
+      name.textContent=it.name||'';
+      const role=document.createElement('div');
+      role.className='role';
+      role.textContent=it.position||it.role||'';
+      const tenure=document.createElement('div');
+      tenure.className='desc';
+      tenure.textContent=(it.tenure ? ('Masa jabatan: '+it.tenure) : '');
+      const desc=document.createElement('div');
+      desc.className='desc';
+      desc.textContent=it.desc||'';
+      info.appendChild(name);info.appendChild(role);info.appendChild(tenure);info.appendChild(desc);
+      card.appendChild(img);card.appendChild(info);
+      if (isAdmin) {
+        const edt=document.createElement('a');
+        edt.href='admin.html?goto=gallery';
+        edt.textContent='Edit';
+        edt.style.cssText='position:absolute;top:8px;left:8px;background:#fff;color:#058a83;border:1px solid #058a83;border-radius:8px;padding:6px 10px;font-weight:700;text-decoration:none;';
+        card.style.position='relative';
+        card.appendChild(edt);
+      }
+      s.appendChild(card);
+      track.appendChild(s);
+    });
+    const startClones=Array.from(track.children).slice(-1).map(s=>s.cloneNode(true));
+    startClones.forEach(s=>track.insertBefore(s,track.firstChild));
+    const endClone=track.children[1].cloneNode(true);
+    track.appendChild(endClone);
+    const prevBtn=document.querySelector('.gallery-btn.prev');
+    const nextBtn=document.querySelector('.gallery-btn.next');
+    const fsBtn=document.querySelector('.gallery-btn.fs');
+    const dotsWrap=document.querySelector('.gallery-dots');
+    let current=1;
+    let slideW=0;
+    let timer=null;
+    const cfg=getGalleryCfg();
+    const intervalMs = Math.max(1000, parseInt(cfg.interval_ms||2500,10));
+    function setSizes(){
+      slideW=Math.floor(viewport.clientWidth);
+      Array.from(track.children).forEach(s=>{ s.style.width=slideW+'px'; });
+      track.style.transform='translateX('+(-current*slideW)+'px)';
+    }
+    function buildDots(){
+      dotsWrap.innerHTML='';
+      for(let d=0;d<baseCount;d++){
+        const b=document.createElement('button');
+        b.className='gallery-dot';
+        b.setAttribute('role','tab');
+        b.setAttribute('aria-label','Posisi '+(d+1));
+        b.addEventListener('click',()=>goTo(d));
+        dotsWrap.appendChild(b);
+      }
+      updateDots();
+    }
+    function updateDots(){
+      const dots=Array.from(dotsWrap.children);
+      const idx=((current-1)%baseCount+baseCount)%baseCount;
+      dots.forEach((dot,i)=>{ dot.classList.toggle('active',i===idx); dot.setAttribute('aria-selected', i===idx?'true':'false'); });
+    }
+    function goTo(idx){
+      current=idx+1;
+      track.style.transition='transform 400ms ease-in-out';
+      track.style.transform='translateX('+(-current*slideW)+'px)';
+      updateDots();
+    }
+    function prev(){
+      current-=1;
+      track.style.transition='transform 400ms ease-in-out';
+      track.style.transform='translateX('+(-current*slideW)+'px)';
+      updateDots();
+    }
+    track.addEventListener('transitionend',()=>{
+      const total=track.children.length;
+      if(current>=total-1){
+        track.style.transition='none';
+        current=1;
+        track.style.transform='translateX('+(-current*slideW)+'px)';
+      }else if(current<=0){
+        track.style.transition='none';
+        current=baseCount;
+        track.style.transform='translateX('+(-current*slideW)+'px)';
+      }
+    });
+    prevBtn.addEventListener('click',()=>{ stopAuto(); prev(); startAuto(); });
+    nextBtn.addEventListener('click',()=>{ stopAuto(); prev(); startAuto(); });
+    fsBtn.addEventListener('click',()=>{
+      const el=viewport;
+      const rfs=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen||el.mozRequestFullScreen;
+      const xfs=document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen||document.mozCancelFullScreen;
+      if(!document.fullscreenElement && rfs){ rfs.call(el); } else if (xfs){ xfs.call(document); }
+    });
+    viewport.addEventListener('keydown',e=>{
+      if(e.key==='ArrowLeft'){ stopAuto(); prev(); startAuto(); }
+      if(e.key==='ArrowRight'){ stopAuto(); prev(); startAuto(); }
+    });
+    let startX=0,dx=0,touching=false;
+    function onStart(e){ touching=true; startX=(e.touches?e.touches[0].clientX:e.clientX); dx=0; stopAuto(); }
+    function onMove(e){ if(!touching) return; const x=(e.touches?e.touches[0].clientX:e.clientX); dx=x-startX; }
+    function onEnd(){ if(!touching) return; touching=false; if(dx<-40) prev(); else if(dx>40) { current+=1; track.style.transition='transform 400ms ease-in-out'; track.style.transform='translateX('+(-current*slideW)+'px)'; updateDots(); } startAuto(); }
+    viewport.addEventListener('touchstart',onStart,{passive:true});
+    viewport.addEventListener('touchmove',onMove,{passive:true});
+    viewport.addEventListener('touchend',onEnd);
+    viewport.addEventListener('pointerdown',onStart);
+    viewport.addEventListener('pointermove',onMove);
+    viewport.addEventListener('pointerup',onEnd);
+    function startAuto(){ timer=setInterval(prev,intervalMs); }
+    function stopAuto(){ if(timer){ clearInterval(timer); timer=null; } }
+    window.addEventListener('resize',setSizes);
+    setSizes();
+    buildDots();
+    startAuto();
+  })();
+  (function(){
+    const root = document.querySelector('.social-section .social-carousel');
+    if(!root) return;
+    const viewport = root.querySelector('.carousel-viewport');
+    const track = root.querySelector('.carousel-track');
+    if(!viewport || !track) return;
+
+    // --- Dynamic Render Logic (Ikuti Kami) ---
+    try {
+        const defaultSocial = [
+            { name: 'Instagram', link: 'https://www.instagram.com/kecamatandayeuhkolot/', icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg' },
+            { name: 'Website Resmi', link: 'https://kecamatandayeuhkolot.bandungkab.go.id/', icon: 'images/kecamatan.png' },
+            { name: 'TikTok', link: 'https://www.tiktok.com/@kecamatandayeuhkolot?_r=1&_t=ZS-92IIBK8UmpU', icon: 'images/tiktok.png' },
+            { name: 'Info Resmi Lowongan Pekerjaan', link: 'https://dashnaker.bandungkab.go.id/demo/', icon: 'images/disnaker.jpg' }
+        ];
+        let data = [];
+        try {
+            const stored = localStorage.getItem('bedas_social_db');
+            if (stored) data = JSON.parse(stored);
+        } catch (e) {}
+        if (!data || !Array.isArray(data) || data.length === 0) data = defaultSocial;
+
+        if (Array.isArray(data) && data.length > 0) {
+            track.innerHTML = data.map(item => `
+                    <div class="carousel-slide">
+                      <a class="social-card" href="${item.link}" target="_blank" rel="noopener noreferrer" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%; background:white; border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,0.08); padding:24px; border:1px solid rgba(0,90,81,0.1);">
+                        <div class="social-preview">
+                          <img src="${item.icon}" alt="${item.name}" style="width:80px; height:80px; object-fit:contain; margin-bottom:16px;" loading="lazy">
+                        </div>
+                        <div class="social-info" style="text-align:center;">
+                          <h3 style="font-size:1.2rem; font-weight:700; color:var(--toska-dark); margin-bottom:8px;">${item.name}</h3>
+                          <span class="mini-link" style="display:inline-block; padding:8px 16px; background:var(--toska-soft); color:var(--toska-dark); border-radius:99px; font-weight:600; font-size:0.9rem;">Kunjungi</span>
+                        </div>
+                      </a>
+                    </div>
+                `).join('');
+            }
+    } catch (e) { console.error('Error rendering social:', e); }
+    // --- End Dynamic Render Logic ---
+
+    if (window.matchMedia("(min-width: 769px)").matches) {
+    const slides = Array.from(track.querySelectorAll('.carousel-slide'));
+    const baseCount = slides.length;
+    if (baseCount === 0) return;
+    const startClones = slides.slice(-2).map(s => s.cloneNode(true));
+    startClones.forEach(s => track.insertBefore(s, track.firstChild));
+    slides.slice(0,2).forEach(s => track.appendChild(s.cloneNode(true)));
+    const prevBtn = root.querySelector('.carousel-btn.prev');
+    const nextBtn = root.querySelector('.carousel-btn.next');
+    const dotsWrap = root.querySelector('.carousel-dots');
+    let current = 2;
+    let slideW = 0;
+    let timer = null;
+    function setSizes() {
+      slideW = Math.floor(viewport.clientWidth);
+      Array.from(track.children).forEach(s => { s.style.width = slideW+'px'; });
+      track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
+    }
+    function buildDots() {
+      if(!dotsWrap) return;
+      dotsWrap.innerHTML = '';
+      for(let d=0; d<baseCount; d++){
+        const b = document.createElement('button');
+        b.className = 'carousel-dot';
+        b.setAttribute('role','tab');
+        b.setAttribute('aria-label','Posisi '+(d+1));
+        b.addEventListener('click', ()=> { stopAuto(); goTo(d); startAuto(); });
+        dotsWrap.appendChild(b);
+      }
+      updateDots();
+    }
+    function updateDots() {
+      if(!dotsWrap) return;
+      const dots = Array.from(dotsWrap.children);
+      const idx = ((current - 2) % baseCount + baseCount) % baseCount;
+      dots.forEach((dot,i)=>{ dot.classList.toggle('active', i===idx); dot.setAttribute('aria-selected', i===idx ? 'true':'false'); });
+    }
+    function goTo(idx) {
+      current = idx + 2;
+      track.style.transition = 'transform 400ms ease-in-out';
+      track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
+      updateDots();
+    }
+    function next() {
+      current += 1;
+      track.style.transition = 'transform 400ms ease-in-out';
+      track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
+      updateDots();
+    }
+    function prev() {
+      current -= 1;
+      track.style.transition = 'transform 400ms ease-in-out';
+      track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
+      updateDots();
+    }
+    track.addEventListener('transitionend', ()=>{
+      const total = track.children.length;
+      if (current >= total - 2) {
+        track.style.transition = 'none';
+        current = current % baseCount;
+        current += 2;
+        track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
+      } else if (current <= 1) {
+        track.style.transition = 'none';
+        current = baseCount + 1;
+        track.style.transform = 'translateX(' + (-current * slideW) + 'px)';
+      }
+    });
+    if(prevBtn){
+      prevBtn.addEventListener('click', ()=>{ stopAuto(); prev(); startAuto(); });
+    }
+    if(nextBtn){
+      nextBtn.addEventListener('click', ()=>{ stopAuto(); next(); startAuto(); });
+    }
+    viewport.addEventListener('keydown', e=>{
+      if(e.key==='ArrowLeft'){ stopAuto(); prev(); startAuto(); }
+      if(e.key==='ArrowRight'){ stopAuto(); next(); startAuto(); }
+    });
+    let startX = 0, dx = 0, touching = false;
+    function onStart(e){ touching = true; startX = (e.touches ? e.touches[0].clientX : e.clientX); dx = 0; stopAuto(); }
+    function onMove(e){ if(!touching) return; const x = (e.touches ? e.touches[0].clientX : e.clientX); dx = x - startX; }
+    function onEnd(){ if(!touching) return; touching = false; if (dx < -40) next(); else if (dx > 40) prev(); startAuto(); }
+    viewport.addEventListener('touchstart', onStart, { passive: true });
+    viewport.addEventListener('touchmove', onMove, { passive: true });
+    viewport.addEventListener('touchend', onEnd);
+    viewport.addEventListener('pointerdown', onStart);
+    viewport.addEventListener('pointermove', onMove);
+    viewport.addEventListener('pointerup', onEnd);
+    function startAuto(){ timer = setInterval(next, 2500); }
+    function stopAuto(){ if(timer){ clearInterval(timer); timer = null; } }
+    window.addEventListener('resize', setSizes);
+    setSizes();
+    buildDots();
+    startAuto();
+    }
+  })();
+  ;(function(){
+    const viewport = document.querySelector('.slogan-viewport[data-group="komitmen"]');
+    const track = document.querySelector('.slogan-track[data-group="komitmen"]');
+    if(!viewport || !track) return;
+
+    // --- Dynamic Render Logic ---
+    try {
+        const defaultKomitmen = [
+            { title: 'Bandung BEDAS', desc: '', image: 'images/slogan3.png' },
+            { title: 'Pemerintah Kab. Bandung', desc: '', image: 'images/logo pemkab.png' },
+            { title: 'Kecamatan Dayeuhkolot', desc: '', image: 'images/kecamatan.png' },
+            { title: 'Bangga Melayani', desc: '', image: 'images/slogan1.png' },
+            { title: 'BerAKHLAK', desc: '', image: 'images/slogan.png' }
+        ];
+        let data = [];
+        try {
+            const stored = localStorage.getItem('bedas_komitmen_db');
+            if (stored) data = JSON.parse(stored);
+        } catch (e) {}
+        if (!data || !Array.isArray(data) || data.length === 0) data = defaultKomitmen;
+
+        if (Array.isArray(data) && data.length > 0) {
+            track.innerHTML = data.map(item => `
+                    <div class="carousel-slide" data-card-group="komitmen" data-anim="zoom" data-in-ms="1200" data-show-ms="5000">
+                        <div class="rotator-inner center" style="flex-direction:column; gap:20px;">
+                            <img src="${item.image}" alt="${item.title}" style="max-height:300px; width:auto; max-width:100%;">
+                            <div style="text-align:center;">
+                                ${item.title ? `<h3 style="margin:0 0 8px 0; color:#333; font-size:1.5rem;">${item.title}</h3>` : ''}
+                                ${item.desc ? `<p style="font-size:1rem; color:#666; max-width:600px; margin:0 auto;">${item.desc}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+    } catch (e) { console.error('Error rendering komitmen:', e); }
+    // --- End Dynamic Render Logic ---
+
+    const slides = Array.from(track.querySelectorAll('.carousel-slide[data-card-group="komitmen"]'));
+    const baseCount = slides.length;
+    if (baseCount === 0) return; // Exit if no slides
+
+    // If mobile, disable this JS logic so native scroll works
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+
+    const prevBtn = viewport.querySelector('.carousel-btn.prev');
+    const nextBtn = viewport.querySelector('.carousel-btn.next');
+    const dotsWrap = viewport.parentElement.querySelector('.slogan-dots');
+    let current = 0;
+    let timer = null;
+    const crossMs = 1000;
+    const crossEase = 'cubic-bezier(0.645, 0.045, 0.355, 1)';
+    function preloadImages(){
+      const imgs = Array.from(track.querySelectorAll('img')).map(img=>img.src);
+      const uniq = Array.from(new Set(imgs));
+      return Promise.all(uniq.map(src=> new Promise(res=>{ const i=new Image(); i.onload=()=>res(); i.onerror=()=>res(); i.src=src; })));
+    }
+    function buildDots(){
+      dotsWrap.innerHTML='';
+      for(let d=0; d<baseCount; d++){
+        const b=document.createElement('button');
+        b.className='carousel-dot';
+        b.setAttribute('role','tab');
+        b.setAttribute('aria-label','Posisi '+(d+1));
+        b.addEventListener('click',()=>{ stopAuto(); show(d); startAuto(); });
+        dotsWrap.appendChild(b);
+      }
+      updateDots();
+    }
+    function updateDots(){
+      const dots = Array.from(dotsWrap.children);
+      dots.forEach((dot,i)=>{ dot.classList.toggle('active', i===current); dot.setAttribute('aria-selected', i===current?'true':'false'); });
+    }
+    function applyEntryAnim(slide){
+      const inner = slide.querySelector('.rotator-inner');
+      const anim = slide.getAttribute('data-anim')||'fade';
+      const inMs = Math.max(300, parseInt(slide.getAttribute('data-in-ms')||1200,10));
+      if(!inner) return;
+      inner.style.transition='none';
+      inner.style.willChange='opacity, transform';
+      if(anim==='fade'){ inner.style.opacity='0'; requestAnimationFrame(()=>{ inner.style.transition='opacity '+inMs+'ms ease-in-out'; inner.style.opacity='1'; }); }
+      else if(anim==='slide-left'){ inner.style.opacity='0.01'; inner.style.transform='translateX(-100px)'; requestAnimationFrame(()=>{ inner.style.transition='opacity '+inMs+'ms ease-in-out, transform '+inMs+'ms ease-in-out'; inner.style.opacity='1'; inner.style.transform='translateX(0)'; }); }
+      else if(anim==='zoom'){ inner.style.opacity='0'; inner.style.transform='scale(0.8)'; requestAnimationFrame(()=>{ inner.style.transition='opacity '+inMs+'ms ease-in-out, transform '+inMs+'ms ease-in-out'; inner.style.opacity='1'; inner.style.transform='scale(1)'; }); }
+      else if(anim==='slide-up'){ inner.style.opacity='0.01'; inner.style.transform='translateY(50px)'; requestAnimationFrame(()=>{ inner.style.transition='opacity '+inMs+'ms ease-in-out, transform '+inMs+'ms ease-in-out'; inner.style.opacity='1'; inner.style.transform='translateY(0)'; }); }
+    }
+    function show(idx){
+      const prev = slides[current];
+      const next = slides[idx];
+      if(prev){
+        prev.classList.remove('active');
+        prev.style.transition='opacity '+crossMs+'ms '+crossEase;
+        prev.style.opacity='0';
+        prev.style.zIndex='1';
+      }
+      next.style.transition='opacity '+crossMs+'ms '+crossEase;
+      next.style.opacity='1';
+      next.style.zIndex='2';
+      next.classList.add('active');
+      applyEntryAnim(next);
+      current = idx;
+      updateDots();
+      scheduleNext();
+    }
+    function scheduleNext(){
+      stopAuto();
+      const slide = slides[current];
+      const inMs = Math.max(300, parseInt(slide.getAttribute('data-in-ms')||1200,10));
+      const showMs = Math.max(300, parseInt(slide.getAttribute('data-show-ms')||5000,10));
+      timer = setTimeout(()=>{ const nx=(current+1)%baseCount; show(nx); }, inMs + showMs);
+    }
+    function startAuto(){ stopAuto(); scheduleNext(); }
+    function stopAuto(){ if(timer){ clearTimeout(timer); timer=null; } }
+    prevBtn.addEventListener('click', ()=>{ stopAuto(); show(((current-1+baseCount)%baseCount)); });
+    nextBtn.addEventListener('click', ()=>{ stopAuto(); show(((current+1)%baseCount)); });
+    viewport.addEventListener('mouseenter', ()=> stopAuto());
+    viewport.addEventListener('mouseleave', ()=> startAuto());
+    viewport.addEventListener('focusin', ()=> stopAuto());
+    viewport.addEventListener('focusout', ()=> startAuto());
+    preloadImages().then(()=>{
+      buildDots();
+      slides.forEach(s=>{ s.style.opacity='0'; s.style.zIndex='1'; });
+      show(0);
+    });
+  })();
+</script>
+
+<script>
+// --- Mobile Auto Scroll Logic (Native Scroll) ---
+(function(){
+  if (!window.matchMedia("(max-width: 768px)").matches) return;
+
+  function initMobileAutoScroll(viewportSelector, cardSelector) {
+     const viewport = document.querySelector(viewportSelector);
+     if (!viewport) return;
+     
+     let timer;
+     const interval = 3000;
+     
+     function scrollNext() {
+        // Check if user is touching
+        if (viewport.matches(':active')) return;
+
+        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+        // Tolerance of 10px
+        if (viewport.scrollLeft >= maxScroll - 10) {
+            // Rewind to start smoothly
+            viewport.scrollTo({left: 0, behavior: 'smooth'});
+        } else {
+            // Scroll by one card width
+            const card = viewport.querySelector(cardSelector);
+            // Default width fallback if card not found
+            const cardWidth = card ? card.offsetWidth + 16 : viewport.clientWidth * 0.5; 
+            viewport.scrollBy({left: cardWidth, behavior: 'smooth'});
+        }
+     }
+
+     function start() {
+        if (timer) clearInterval(timer);
+        timer = setInterval(scrollNext, interval);
+     }
+     
+     function stop() {
+        if (timer) clearInterval(timer);
+     }
+
+     // Pause on interaction
+     viewport.addEventListener('touchstart', stop, {passive: true});
+     viewport.addEventListener('touchend', start); 
+     viewport.addEventListener('scroll', () => {
+         // Optional: debounce restart? 
+         // For now, rely on touch events to pause. 
+         // Continuous scroll event might trigger during auto-scroll, so better not clear timer here.
+     }, {passive: true});
+     
+     start();
+  }
+
+  // Init for Social (Ikuti Kami)
+  // Wait a bit for dynamic content to load if needed, or check periodically?
+  // Since scripts run at end of body, content *should* be there or rendering.
+  // Social content is rendered by previous script.
+  setTimeout(() => {
+    initMobileAutoScroll('.social-carousel .carousel-viewport', '.social-carousel .carousel-slide');
+    initMobileAutoScroll('.slogan-viewport', '.slogan-track .carousel-slide');
+  }, 1000); // Small delay to ensure render
+
+})();
+</script>
+
+<script>
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('ServiceWorker registration successful');
+        })
+        .catch(err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+    });
+  }
+</script>
+</body>
+</html>

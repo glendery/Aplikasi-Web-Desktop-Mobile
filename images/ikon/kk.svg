@@ -1,0 +1,17 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cardGrad" x1="32" y1="12" x2="32" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A7C1FF"/>
+      <stop offset="1" stop-color="#3E5FB5"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 12H84L104 32V116H32V12Z" fill="url(#cardGrad)" stroke="#1E3A8A" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M84 12V32H104" stroke="#1E3A8A" stroke-width="4" stroke-linejoin="round"/>
+  <line x1="44" y1="28" x2="70" y2="28" stroke="#1E3A8A" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="54" cy="60" r="7" fill="#ffffff" stroke="#0B1F4A" stroke-width="3"/>
+  <path d="M44 80C44 74 48 70 54 70C60 70 64 74 64 80" stroke="#0B1F4A" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="82" cy="60" r="7" fill="#ffffff" stroke="#0B1F4A" stroke-width="3"/>
+  <path d="M72 80C72 74 76 70 82 70C88 70 92 74 92 80" stroke="#0B1F4A" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="68" cy="88" r="6" fill="#ffffff" stroke="#0B1F4A" stroke-width="3"/>
+  <path d="M60 104C60 100 63 96 68 96C73 96 76 100 76 104" stroke="#0B1F4A" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

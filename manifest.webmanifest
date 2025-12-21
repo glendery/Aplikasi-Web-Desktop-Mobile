@@ -1,0 +1,21 @@
+{
+  "name": "Dayeuhkolot Bedas Serve – Kecamatan Dayeuhkolot",
+  "short_name": "Dayeuhkolot Bedas Serve",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#d9f4ef",
+  "theme_color": "#058a83",
+  "icons": [
+    {
+      "src": "images/ikon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "images/ikon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
