@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dayeuhkolot-bedasserve.netlify.app/sitemap.xml
+Sitemap: https://bedaservedayeuhklt.netlify.app/sitemap.xml

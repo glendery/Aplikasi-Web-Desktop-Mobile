@@ -5,28 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO & Meta Tags -->
-    <title>Dayeuhkolot Bedas Serve – Pelayanan Publik Kecamatan Dayeuhkolot</title>
-    <meta name="description" content="Portal resmi pelayanan publik Kecamatan Dayeuhkolot, Kabupaten Bandung. Informasi KTP, KK, layanan administrasi, dan berita terkini Dayeuhkolot.">
-    <meta name="keywords" content="Dayeuhkolot, Kecamatan Dayeuhkolot, Pelayanan Publik, Bandung, KTP Dayeuhkolot, KK Dayeuhkolot, Bedas Serve">
+    <title>Dayeuhkolot Bedas Serve – Aplikasi Layanan Digital Kecamatan Dayeuhkolot</title>
+    <meta name="description" content="Aplikasi web layanan digital Dayeuhkolot Bedas Serve menyediakan informasi dan pelayanan publik online untuk warga Kecamatan Dayeuhkolot, Kabupaten Bandung. Cepat, Transparan, Modern.">
+    <meta name="keywords" content="Dayeuhkolot Bedas Serve, Aplikasi Layanan Digital, Kecamatan Dayeuhkolot, Pelayanan Publik Online, KTP Dayeuhkolot, KK Dayeuhkolot">
     <meta name="author" content="Pemerintah Kecamatan Dayeuhkolot">
     <meta name="robots" content="index, follow">
 
     <!-- Google Search Console -->
-    <meta name="google-site-verification" content="bhP--UhfqsP67aMlYYBE-vz9YsLQn2_xYJKZXxGeibE" />
+    <meta name="google-site-verification" content="A9dTMM57-SP_-S1ZW-HRW9Qe5_eWV0DXWEEGN9XsO3w" />
     
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://dayeuhkolot-bedasserve.netlify.app/">
+    <meta property="og:url" content="https://bedaservedayeuhklt.netlify.app/">
     <meta property="og:title" content="Dayeuhkolot Bedas Serve – Pelayanan Publik Terpadu">
     <meta property="og:description" content="Akses mudah layanan publik Kecamatan Dayeuhkolot. Cek persyaratan, ajukan permohonan, dan dapatkan informasi terkini.">
-    <meta property="og:image" content="https://dayeuhkolot-bedasserve.netlify.app/images/Dayeuklt.jpg">
+    <meta property="og:image" content="https://bedaservedayeuhklt.netlify.app/images/Dayeuklt.jpg">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://dayeuhkolot-bedasserve.netlify.app/">
+    <meta property="twitter:url" content="https://bedaservedayeuhklt.netlify.app/">
     <meta property="twitter:title" content="Dayeuhkolot Bedas Serve">
     <meta property="twitter:description" content="Portal resmi pelayanan publik Kecamatan Dayeuhkolot, Kabupaten Bandung.">
-    <meta property="twitter:image" content="https://dayeuhkolot-bedasserve.netlify.app/images/Dayeuklt.jpg">
+    <meta property="twitter:image" content="https://bedaservedayeuhklt.netlify.app/images/Dayeuklt.jpg">
 
     <meta name="theme-color" content="#058a83">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,8 +51,8 @@
 <header class="header">
     <div class="header-left">
 
-        <img class="brand-logo-left" src="images/kecamatan.png" alt="Logo apk ini">
-        <img class="brand-logo-left logo-slogan" src="images/slogan2.png" alt="Logo apk ini">       
+        <img class="brand-logo-left" src="images/kecamatan.png" alt="Logo Resmi Kecamatan Dayeuhkolot">
+        <img class="brand-logo-left logo-slogan" src="images/slogan2.png" alt="Slogan Bedas Kabupaten Bandung">       
         <div class="brand-text">
             <h1 class="brand-title">Dayeuhkolot Bedas Serve</h1>
             <p class="brand-subtitle">Pelayanan Terpadu Kecamatan Dayeuhkolot</p>
@@ -92,10 +92,11 @@
               <div class="hero-text">
                 <div class="hero-panel">
                   <div class="panel-content">
-                    <h1><span>Pelayanan Publik</span><br><span>Berbasis Digital</span></h1>
+                    <h1><span>Dayeuhkolot Bedas Serve</span><br><span>Aplikasi Layanan Digital</span></h1>
                     <p class="hero-description">
-                        BEDAS SERVE hadir untuk memberikan kemudahan akses informasi dan
-                        layanan administrasi kependudukan secara cepat, transparan, dan modern.
+                        Selamat datang di aplikasi web layanan digital Dayeuhkolot Bedas Serve. 
+                        Kami hadir untuk memberikan kemudahan akses informasi dan
+                        layanan administrasi kependudukan secara cepat, transparan, dan modern bagi warga Kecamatan Dayeuhkolot.
                     </p>
                     <a href="chat.html" class="btn-cta"><span class="btn-title">Mulai Konsultasi</span></a>
                     <div class="hero-center">
@@ -1351,6 +1352,32 @@
 
   // Init for Social (Ikuti Kami)
   // Wait a bit for dynamic content to load if needed, or check periodically?
+  // Since scripts run at end of body, content *should* be there or rendering.
+  // Social content is rendered by previous script.
+  setTimeout(() => {
+    initMobileAutoScroll('.social-carousel .carousel-viewport', '.social-carousel .carousel-slide');
+    initMobileAutoScroll('.slogan-viewport', '.slogan-track .carousel-slide');
+  }, 1000); // Small delay to ensure render
+
+})();
+</script>
+
+<script>
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('ServiceWorker registration successful');
+        })
+        .catch(err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+    });
+  }
+</script>
+</body>
+</html>
   // Since scripts run at end of body, content *should* be there or rendering.
   // Social content is rendered by previous script.
   setTimeout(() => {
