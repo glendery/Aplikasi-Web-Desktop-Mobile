@@ -26,10 +26,11 @@
             padding: 0;
             background-color: var(--background);
             color: var(--text);
-            display: flex;
+            display: none; /* Auth Check */
             height: 100vh;
             overflow: hidden;
         }
+        body.auth-success { display: flex; }
 
         /* Sidebar */
         .sidebar {
@@ -114,6 +115,7 @@
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
                 box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+                z-index: 3001; /* Above overlay */
             }
             
             .sidebar.show {
@@ -133,6 +135,7 @@
                 transform: translateY(100%);
                 border-radius: 16px 16px 0 0;
                 box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+                z-index: 3002; /* Above sidebar if needed */
             }
 
             .editor-panel.open {
@@ -143,6 +146,11 @@
             .coordinates-display {
                 padding: 0.5rem;
                 font-size: 0.85rem;
+            }
+
+            /* Hide Leaflet zoom controls on mobile to prevent overlap */
+            .leaflet-control-zoom {
+                display: none;
             }
         }
 
@@ -485,6 +493,27 @@
     <div id="toast">Notifikasi</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="db-service.js"></script>
+
+    <script src="admin-auth.js"></script>
+    <script>
+      // Auth Check
+      window.addEventListener('DOMContentLoaded', async () => {
+          if(window.AdminAuth) {
+              await window.AdminAuth.requireAuth();
+              // Load data after auth
+              if(window.loadPlaces) window.loadPlaces();
+          }
+      });
+      window.AdminAuth.requireAuth();
+      document.body.classList.add('auth-success');
+    </script>
     <script src="admin_map_logic.js"></script>
     <script>
         function toggleSidebar() {

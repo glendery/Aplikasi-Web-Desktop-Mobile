@@ -1,0 +1,59 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    
+    "bedas_submissions": {
+      // Hanya Admin (Password) yang boleh BACA data warga
+      ".read": "auth.token.firebase.sign_in_provider === 'password'",
+      // Warga (Anonim) boleh KIRIM data
+      ".write": "auth != null",
+      ".indexOn": ["ts"]
+    },
+    
+    "bedas_surveys": {
+      ".read": "auth.token.firebase.sign_in_provider === 'password'",
+      ".write": "auth != null"
+    },
+
+    "bedas_survey_stats": {
+      ".read": "auth.token.firebase.sign_in_provider === 'password'",
+      ".write": "auth != null"
+    },
+
+    "bedas_audit_log": {
+      ".read": "auth.token.firebase.sign_in_provider === 'password'",
+      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    },
+
+    // Data Umum (Boleh dibaca publik, tapi edit butuh Admin)
+    "bedas_komitmen": {
+      ".read": true,
+      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    },
+    "bedas_social": {
+      ".read": true,
+      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    },
+    "bedas_services_db": {
+      ".read": true,
+      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    },
+    "bedas_gallery": {
+      ".read": true,
+      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    },
+    "bedas_featured_services": {
+      ".read": true,
+      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    },
+    "bedas_popular_services": {
+      ".read": true,
+      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    },
+    "bedas_survey_aggregates": {
+      ".read": true,
+      ".write": "auth != null"
+    }
+  }
+}

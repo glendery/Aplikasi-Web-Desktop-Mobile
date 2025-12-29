@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Dayeuhkolot Bedas Serve – Layanan Mandiri</title>
     <meta name="theme-color" content="#058a83">
     <meta name="mobile-web-app-capable" content="yes">
@@ -13,6 +13,7 @@
     
     <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <script src="firebase-config.js"></script>
@@ -55,7 +56,9 @@
             .chat-header h2 { font-size: 16px; }
         }
 
-        :root{ 
+        /* Base variables are inherited from styles.css */
+        
+        body {
             --primary: var(--toska-main); 
             --accent: var(--toska-dark); 
             --bot-msg:#ffffff; 
@@ -65,6 +68,22 @@
             --text-dark: var(--text-body); 
             --wa-color:#25D366;
             --bg-gradient: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
+        }
+
+        /* Update variables when theme changes */
+        body.theme-alt {
+            --user-msg: linear-gradient(135deg, var(--toska-main) 0%, #3f88c5 100%);
+        }
+
+        body.color-safe {
+            --primary: #000; 
+            --accent: #000; 
+            --bot-msg:#fff; 
+            --user-msg: #000; 
+            --border-color:#000; 
+            --text-light: #000; 
+            --text-dark: #000; 
+            --bg-gradient: #fff;
         }
 
         /* Base resets */
@@ -100,7 +119,30 @@
         .chat-box { background:transparent; padding:0; min-height:280px; }
 
         /* Card for messages area */
-        .messages-card { background:white; border-radius:12px; padding:16px; box-shadow:0 6px 20px rgba(14,30,37,0.04); border:1px solid rgba(8,37,47,0.03); max-height:68vh; overflow:auto; position: relative; }
+        .messages-card { 
+            background: #ffffff;
+            border-radius:12px; 
+            padding:16px; 
+            box-shadow:0 6px 20px rgba(14,30,37,0.04); 
+            border:1px solid rgba(8,37,47,0.03); 
+            max-height:68vh; 
+            overflow:auto; 
+            position: relative; 
+        }
+        
+        .messages-card::before {
+            content: "";
+            display: block !important;
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: url('images/Latar Chat.jpg');
+            background-size: 120px; /* Small size for tiling pattern */
+            background-repeat: repeat;
+            background-position: center top;
+            opacity: 0.15; /* Watermark effect */
+            z-index: 0;
+        }
         .messages-card > * { position: relative; z-index: 1; }
         body.chat-wallpaper .messages-card { background: rgba(255,255,255,0.94); backdrop-filter: saturate(1.05) blur(3px); }
 
@@ -190,38 +232,13 @@
             flex: 1;
             padding: 16px 12px;
             overflow-y: auto;
-            background: linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%);
+            background: transparent !important; /* Force transparent to show Latar Chat.jpg */
             display: flex;
             flex-direction: column;
             gap: 14px;
             position: relative;
         }
-        .messages-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            background-image: url('images/kecamatan.png');
-            background-size: 180px;
-            background-repeat: repeat;
-            background-position: 24px 24px;
-            opacity: 0;
-            filter: grayscale(10%);
-            transition: opacity .25s ease;
-            z-index: 0;
-        }
-        body.chat-wallpaper .messages-card::before { opacity: .08; }
-        body.chat-wallpaper-fallback .messages-card::before {
-            background-image:
-              radial-gradient(circle at 12px 12px, rgba(0,137,123,0.22) 1.4px, transparent 1.5px),
-              radial-gradient(circle at 36px 36px, rgba(0,137,123,0.14) 1.1px, transparent 1.2px),
-              radial-gradient(circle at 60px 20px, rgba(0,137,123,0.10) 1.1px, transparent 1.2px);
-            background-size: 24px 24px, 36px 36px, 48px 48px;
-            background-position: 0 0, 8px 12px, 16px 6px;
-            filter: none;
-            opacity: .08;
-        }
-        body.chat-wallpaper .chat-box { background: transparent; }
+
         
         .chat-box::-webkit-scrollbar {
             width: 6px;
@@ -765,7 +782,7 @@
                 box-shadow: none;
                 flex: 1;
                 max-height: none;
-                padding-bottom: 90px; /* Space for input area */
+                padding-bottom: 150px; /* Increased space for input area and WA button */
             }
             .input-area {
                 position: fixed;
@@ -779,6 +796,12 @@
                 padding-bottom: max(14px, env(safe-area-inset-bottom));
                 background: rgba(255, 255, 255, 0.96);
                 backdrop-filter: blur(10px);
+            }
+            
+            /* Fix floating WA overlap with fixed input area */
+            .floating-wa {
+                bottom: 120px !important;
+                z-index: 200 !important; /* Ensure it's above input area if needed, but better above visually */
             }
             
             .message {
@@ -818,9 +841,6 @@
     </div>
         <div class="header-right">
             <a href="index.html" class="btn-cta">Beranda</a>
-            <button class="theme-toggle" id="chatThemeToggle">🎨</button>
-            <button class="theme-toggle" id="toggleChatBg">🖼️</button>
-            <button class="a11y-toggle" id="chatA11yToggle" title="Mode Buta Warna / Kontras" style="background:#222;color:#fff;border:none;border-radius:40px;padding:8px 12px;font-weight:700;cursor:pointer;margin-left:8px;">♿</button>
         </div>
     </header>
 
@@ -932,48 +952,29 @@
   </div>
 </div>
 
+<!-- SURVEY MODAL -->
+<div class="modal" id="surveyModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div style="font-weight:700;color:var(--primary);">Survey Kepuasan</div>
+    </div>
+    <div class="modal-body" style="text-align:center;">
+      <p style="font-size:14px;color:var(--text-light);margin-bottom:16px;">Bagaimana pengalaman Anda menggunakan layanan ini?</p>
+      <div style="display:flex;justify-content:center;gap:16px;">
+        <button class="survey-btn" onclick="submitSurvey('puas')" style="font-size:32px;background:none;border:none;cursor:pointer;transition:transform 0.2s;">🤩<div style="font-size:12px;color:var(--text-dark);margin-top:4px;">Puas</div></button>
+        <button class="survey-btn" onclick="submitSurvey('cukup')" style="font-size:32px;background:none;border:none;cursor:pointer;transition:transform 0.2s;">😐<div style="font-size:12px;color:var(--text-dark);margin-top:4px;">Cukup</div></button>
+        <button class="survey-btn" onclick="submitSurvey('tidak_puas')" style="font-size:32px;background:none;border:none;cursor:pointer;transition:transform 0.2s;">😞<div style="font-size:12px;color:var(--text-dark);margin-top:4px;">Kurang</div></button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
 
 
 
     <script src="data-services.js"></script>
-    <script>
-    if (document.getElementById('chatA11yToggle')) {
-        const btn = document.getElementById('chatA11yToggle');
-        btn.addEventListener('click', () => {
-            const isSafe = document.body.classList.toggle('color-safe');
-            localStorage.setItem('bedas_a11y_mode', isSafe ? 'enabled' : 'disabled');
-            if (isSafe) showToast('Mode Kontras Tinggi Aktif', 'success');
-            else showToast('Mode Normal Aktif', 'info');
-        });
-        // Check initial state
-        if (localStorage.getItem('bedas_a11y_mode') === 'enabled') {
-            document.body.classList.add('color-safe');
-        }
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'bedas_a11y_mode') {
-                document.body.classList.toggle('color-safe', e.newValue === 'enabled');
-            }
-        });
-    }
-    // Existing theme toggle logic if present
-    if (document.getElementById('chatThemeToggle')) {
-        document.getElementById('chatThemeToggle').addEventListener('click', () => {
-            document.body.classList.toggle('theme-alt');
-            localStorage.setItem('bedas_theme', document.body.classList.contains('theme-alt') ? 'alt' : 'default');
-        });
-        if (localStorage.getItem('bedas_theme') === 'alt') document.body.classList.add('theme-alt');
-    }
-    // Existing bg toggle logic if present
-    if (document.getElementById('toggleChatBg')) {
-        document.getElementById('toggleChatBg').addEventListener('click', () => {
-            document.body.classList.toggle('chat-wallpaper');
-            localStorage.setItem('bedas_chat_bg', document.body.classList.contains('chat-wallpaper') ? 'on' : 'off');
-        });
-        if (localStorage.getItem('bedas_chat_bg') === 'on') document.body.classList.add('chat-wallpaper');
-    }
-</script>
     <script>
         const adminPhoneNumber = "6285117722769";
         const WARIS_TEMPLATES = [
@@ -982,7 +983,23 @@
             { title: "Surat Pernyataan Dua Orang Saksi (PDF)", url: "Template Waris/SURAT PERNYATAAN DUA ORANG SAKSI.pdf" },
             { title: "Surat Pernyataan Pemohon Ahli Waris (PDF)", url: "Template Waris/SURAT PERNYATAAN PEMOHON SURAT KETERANGAN AHLI WARIS.pdf" }
         ];
-        function availableTemplatesFor(serviceTitle){ return WARIS_TEMPLATES; }
+        function availableTemplatesFor(serviceTitle){ 
+            let base = [];
+            // Add defaults for Waris
+            if (serviceTitle === "Layanan PERMOHONAN AHLI WARIS") {
+                base = [...WARIS_TEMPLATES];
+            }
+            // Merge with existing service templates to preserve dynamic ones
+            const svc = (typeof services !== 'undefined' ? services : []).find(s => s.title === serviceTitle);
+            if (svc && svc.templates) {
+                svc.templates.forEach(t => {
+                    if (!base.find(b => b.url === t.url)) {
+                        base.push(t);
+                    }
+                });
+            }
+            return base;
+        }
         function slugifyTitle(t){ return String(t||'').toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-'); }
         function makeDeepLink(t){
             const slug = slugifyTitle(t);
@@ -1003,10 +1020,29 @@
                 return fb;
             }
         }
+
+        // --- THEME & ACCESSIBILITY CONTROLS ---
         const themeBtn = document.getElementById('chatThemeToggle');
         if (themeBtn) {
-            themeBtn.addEventListener('click', () => document.body.classList.toggle('theme-alt'));
+            themeBtn.addEventListener('click', () => {
+                const isAlt = document.body.classList.toggle('theme-alt');
+                localStorage.setItem('bedas_theme', isAlt ? 'alt' : 'default');
+            });
+            if (localStorage.getItem('bedas_theme') === 'alt') document.body.classList.add('theme-alt');
         }
+
+        const a11yBtn = document.getElementById('chatA11yToggle');
+        if (a11yBtn) {
+            a11yBtn.addEventListener('click', () => {
+                const isSafe = document.body.classList.toggle('color-safe');
+                localStorage.setItem('bedas_a11y_mode', isSafe ? 'enabled' : 'disabled');
+                if (typeof showToast === 'function') {
+                    showToast(isSafe ? 'Mode Kontras Tinggi Aktif' : 'Mode Normal Aktif', isSafe ? 'success' : 'info');
+                }
+            });
+            if (localStorage.getItem('bedas_a11y_mode') === 'enabled') document.body.classList.add('color-safe');
+        }
+        
         const toggleBgBtn = document.getElementById('toggleChatBg');
         function loadBgPref(){
             const q = new URLSearchParams(location.search);
@@ -1269,6 +1305,10 @@
                 submissions = currentLS;
 
                 recordSubmissionStatus(payload.id, 'confirmed', 'Tersimpan');
+                window.currentSubmissionID = payload.id; // Link for survey triggers
+                window.submissionTS = Date.now(); // Set TS for Grace Period
+                window.surveyShownSession = false; // Allow survey to show again for this new ID
+                if(window.startSurveyTimer) window.startSurveyTimer(); // Restart 5m timer
             } catch (e) {
                 console.error('Submission failed', e);
                 // Fallback to local only if BedasDB throws
@@ -1322,7 +1362,6 @@
             if (userInput) { userInput.disabled = false; userInput.placeholder = 'Ketik layanan (cth: IKD)...'; }
             addMessage(`<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px"><button class="option-btn" onclick="window.openHistory()">Riwayat Pengiriman</button></div>`, 'bot');
         }
-
 
         function trackEvent(payload) { try{ const arr=JSON.parse(localStorage.getItem('bedas_analytics')||'[]'); arr.push({ ...payload, ts:new Date().toISOString() }); localStorage.setItem('bedas_analytics', JSON.stringify(arr)); }catch(e){} }
 
@@ -1387,44 +1426,33 @@
         // --- 2. Database Logic ---
         async function initServiceDB() {
             try {
-                // Use BedasDB to get services (online or local)
-                let data = await BedasDB.getServices();
-                
-                // If empty (first run or offline/empty), seed from defaultServicesList if available
-                if (data.length === 0 && typeof defaultServicesList !== 'undefined') {
-                    data = [...defaultServicesList];
-                    // Migrate legacy if exists
-                    try {
-                        const legacy = JSON.parse(localStorage.getItem('bedas_extra_services') || '[]');
-                        if (legacy.length > 0) {
-                            data = [...data, ...legacy];
-                            localStorage.removeItem('bedas_extra_services');
-                        }
-                    } catch(e){}
-                    
-                    // Save to BedasDB (syncs to Cloud if online)
-                    await BedasDB.saveServices(data);
-                } else {
-                     // Sync specific code updates
-                     if (typeof defaultServicesList !== 'undefined') {
-                        const warisTitle = "Layanan PERMOHONAN AHLI WARIS";
-                        const warisDefault = defaultServicesList.find(s => s.title === warisTitle);
-                        const warisStored = data.find(s => s.title === warisTitle);
+                // Real-time subscription for Services
+                BedasDB.subscribe('services', async (data) => {
+                    // 1. Handle Empty/First Run -> Seed from Default
+                    if ((!data || data.length === 0) && typeof defaultServicesList !== 'undefined') {
+                        console.log('Chat: Seeding default services...');
+                        data = [...defaultServicesList];
                         
-                        if (warisDefault && warisStored) {
-                             if (JSON.stringify(warisStored.templates) !== JSON.stringify(warisDefault.templates) ||
-                                 JSON.stringify(warisStored.procedure) !== JSON.stringify(warisDefault.procedure)) {
-                                 warisStored.templates = warisDefault.templates;
-                                 warisStored.procedure = warisDefault.procedure;
-                                 await BedasDB.saveServices(data);
-                             }
-                        }
-                     }
-                }
-                
-                services = data;
-                updateServiceCountDisplay();
-                refreshSuggestions();
+                        // Migrate legacy if exists
+                        try {
+                            const legacy = JSON.parse(localStorage.getItem('bedas_extra_services') || '[]');
+                            if (legacy.length > 0) {
+                                data = [...data, ...legacy];
+                                localStorage.removeItem('bedas_extra_services');
+                            }
+                        } catch(e){}
+                        
+                        // Save to BedasDB (triggers update loop)
+                        await BedasDB.saveServices(data);
+                        return; // Exit, wait for next update from DB
+                    }
+                    
+                    // 3. Update Global State
+                    services = data;
+                    updateServiceCountDisplay();
+                    refreshSuggestions();
+                    console.log('Chat: Services synced (Realtime). Total:', services.length);
+                });
                 
             } catch(e) {
                 console.error('Service DB Init Failed:', e);
@@ -2030,6 +2058,231 @@
       window.addEventListener('load', () => {
          setTimeout(checkFormSession, 800);
       });
+    </script>
+    <!-- Survey Modal -->
+    <div id="surveyModal" class="modal" style="z-index: 99999;">
+        <div class="modal-card" style="max-width: 360px; text-align: center; padding: 24px; border-radius: 20px;">
+            <div id="surveyStep1">
+                <h3 style="margin-top:0; color:var(--primary); font-size:18px;">Kepuasan Layanan</h3>
+                <p style="font-size:14px; color:#666; margin-bottom:24px; line-height:1.5;">Seberapa puas Anda dengan layanan mandiri ini?</p>
+                
+                <div style="display:flex; justify-content:center; gap:12px; margin-bottom:24px;">
+                    <button onclick="submitSurvey('puas')" class="survey-opt anim-scale" style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:12px; padding:12px 16px; cursor:pointer; transition:all 0.2s; min-width:80px;">
+                        <div style="font-size:28px; margin-bottom:4px;">🤩</div>
+                        <div style="font-size:12px; font-weight:600; color:#2e7d32;">Puas</div>
+                    </button>
+                    <button onclick="askFeedback('cukup')" class="survey-opt anim-scale" style="background:#fff8e1; border:1px solid #ffecb3; border-radius:12px; padding:12px 16px; cursor:pointer; transition:all 0.2s; min-width:80px;">
+                        <div style="font-size:28px; margin-bottom:4px;">😐</div>
+                        <div style="font-size:12px; font-weight:600; color:#f57f17;">Cukup</div>
+                    </button>
+                    <button onclick="askFeedback('tidak_puas')" class="survey-opt anim-scale" style="background:#ffebee; border:1px solid #ffcdd2; border-radius:12px; padding:12px 16px; cursor:pointer; transition:all 0.2s; min-width:80px;">
+                        <div style="font-size:28px; margin-bottom:4px;">😞</div>
+                        <div style="font-size:12px; font-weight:600; color:#c62828;">Kurang</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feedback Input Step (Hidden by default) -->
+            <div id="surveyStep2" style="display:none; text-align:left;">
+                <div style="font-size:15px; font-weight:700; margin-bottom:8px; color:var(--text-dark);">Apa yang perlu diperbaiki?</div>
+                <div style="font-size:13px; color:var(--text-light); margin-bottom:12px;">Masukan Anda membantu kami melayani lebih baik.</div>
+                <textarea id="surveyFeedback" placeholder="Contoh: Respon lambat, error saat upload..." style="width:100%; height:80px; padding:12px; border:1px solid #ddd; border-radius:12px; font-size:14px; margin-bottom:16px; font-family:inherit; resize:none;"></textarea>
+                <button id="btnSubmitFeedback" class="btn-primary" style="width:100%; padding:12px; border-radius:12px; background:var(--toska-main); color:white; border:none; font-weight:600; cursor:pointer; font-size:14px; box-shadow:0 4px 12px rgba(0,137,123,0.2);">Kirim Masukan</button>
+            </div>
+
+            <button onclick="closeSurvey()" style="background:transparent; border:none; color:#999; font-size:13px; cursor:pointer; text-decoration:underline; padding:8px;">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        // --- SURVEY LOGIC (Exit Intent & Timer) ---
+        window.currentSubmissionID = null;
+        window.submissionTS = null;
+        window.surveyShownSession = false;
+        window.surveyTimer = null;
+        window.sessionStartTime = Date.now(); // Prevent instant trigger on load
+
+        window.startSurveyTimer = function() {
+            if(window.surveyTimer) clearTimeout(window.surveyTimer);
+            window.surveyTimer = setTimeout(() => {
+                console.log('Survey Trigger: Timer (5m)');
+                tryTriggerSurvey('timer');
+            }, 5 * 60 * 1000);
+        };
+
+        function initSurveyTriggers() {
+            // 1. Check if we have a recent submission to link to
+            try {
+                const subs = loadSubmissions();
+                if (subs.length > 0) {
+                    // Sort by TS descending
+                    subs.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+                    // Only link if less than 24 hours old
+                    const last = subs[0];
+                    const lastTs = new Date(last.ts).getTime();
+                    if (Date.now() - lastTs < 24 * 60 * 60 * 1000) {
+                        window.currentSubmissionID = last.id;
+                        window.submissionTS = lastTs;
+                    }
+                }
+            } catch(e) {}
+
+            // 2. Timer: 5 Minutes
+            window.startSurveyTimer();
+
+            // 3. Exit Intent (Desktop)
+            document.addEventListener('mouseleave', (e) => {
+                if (e.clientY < 0) {
+                    console.log('Survey Trigger: Exit Intent');
+                    tryTriggerSurvey('exit');
+                }
+            });
+
+            // 4. Visibility Change (Mobile/Tab Switch)
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    console.log('Survey Trigger: Visibility Hidden');
+                    tryTriggerSurvey('visibility');
+                }
+            });
+
+            // 5. Before Unload (Attempt to hold tab)
+            window.addEventListener('beforeunload', (e) => {
+                // Only if survey is pending and we have a submission
+                if (window.currentSubmissionID && 
+                    !localStorage.getItem('bedas_survey_done_' + window.currentSubmissionID) && 
+                    !window.surveyShownSession) {
+                    
+                    // REMOVED STRICT 5 MIN RULE for beforeunload to catch early exiters
+                    // const elapsed = Date.now() - (window.submissionTS || 0);
+                    // if (elapsed < 5 * 60 * 1000) return;
+
+                    e.preventDefault();
+                    e.returnValue = ''; // Standard way to trigger confirmation dialog
+                    
+                    // Show survey immediately in case they stay
+                    showSurveyCard();
+                    return '';
+                }
+            });
+        }
+
+        function tryTriggerSurvey(source) {
+            if (window.surveyShownSession) return; // Already shown in this session
+            if (!window.currentSubmissionID) return; // Sync Requirement: Must be linked to a submission
+            
+            // Check if already done for this submission
+            if (localStorage.getItem('bedas_survey_done_' + window.currentSubmissionID)) return;
+
+            // STRICT 5 MINUTE RULE
+            const elapsed = Date.now() - (window.submissionTS || 0);
+            const THRESHOLD = 5 * 60 * 1000; // 5 mins
+
+            if (source === 'timer') {
+                showSurveyCard();
+            } else if (source === 'exit' || source === 'visibility') {
+                // BYPASS RULE: Jika user mau keluar (exit/visibility hidden) dan SUDAH SUBMIT,
+                // tampilkan survey meskipun belum 5 menit.
+                if (window.currentSubmissionID && !localStorage.getItem('bedas_survey_done_' + window.currentSubmissionID)) {
+                     showSurveyCard();
+                }
+            } else {
+                // Fallback default
+                if (elapsed >= THRESHOLD) {
+                    showSurveyCard();
+                }
+            }
+        }
+
+        function showSurveyCard() {
+            const modal = document.getElementById('surveyModal');
+            if (modal) {
+                // Reset View
+                const s1 = document.getElementById('surveyStep1');
+                const s2 = document.getElementById('surveyStep2');
+                if(s1) s1.style.display = 'block';
+                if(s2) s2.style.display = 'none';
+                document.getElementById('surveyFeedback').value = '';
+
+                modal.classList.add('open');
+                window.surveyShownSession = true;
+                
+                // Add animation
+                const card = modal.querySelector('.modal-card');
+                if(card) {
+                    card.style.animation = 'popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                }
+            }
+        }
+
+        function closeSurvey() {
+            const modal = document.getElementById('surveyModal');
+            if (modal) modal.classList.remove('open');
+        }
+        
+        // Step 1: User chooses rating (Cukup/Kurang -> Go to feedback)
+        window.tempRating = '';
+        
+        window.askFeedback = function(rating) {
+            window.tempRating = rating;
+            const s1 = document.getElementById('surveyStep1');
+            const s2 = document.getElementById('surveyStep2');
+            
+            // Slide transition
+            if(s1) s1.style.display = 'none';
+            if(s2) {
+                s2.style.display = 'block';
+                s2.style.animation = 'fadeIn 0.3s ease';
+            }
+        };
+
+        // Step 2: Submit with feedback
+        document.getElementById('btnSubmitFeedback').onclick = function() {
+            const fb = document.getElementById('surveyFeedback').value.trim();
+            submitSurvey(window.tempRating, fb);
+        };
+
+        async function submitSurvey(rating, feedback = '') {
+            if (!window.currentSubmissionID) return;
+
+            // UI Feedback
+            const modalBody = document.querySelector('#surveyModal .modal-card');
+            const originalContent = modalBody.innerHTML;
+            modalBody.innerHTML = '<div style="padding:40px;"><div class="loading-card" style="box-shadow:none;justify-content:center;"><img src="images/Dayeuklt.jpg" style="width:40px;"></div><div style="margin-top:10px;font-weight:600;color:var(--primary);">Mengirim...</div></div>';
+
+            try {
+                await BedasDB.addSurvey({
+                    submission_id: window.currentSubmissionID,
+                    rating: rating,
+                    feedback: feedback, // Save feedback
+                    ts: new Date().toISOString()
+                });
+                
+                // Mark as done
+                localStorage.setItem('bedas_survey_done_' + window.currentSubmissionID, '1');
+                
+                modalBody.innerHTML = '<div style="padding:40px;"><div style="font-size:40px;">✅</div><div style="margin-top:10px;font-weight:bold;color:#2e7d32;">Terima Kasih!</div><div style="font-size:13px;color:#666;margin-top:4px;">Masukan Anda sangat berharga.</div></div>';
+                setTimeout(() => {
+                    closeSurvey();
+                    // Restore original content for next time (though page usually reloads or session ends)
+                    setTimeout(() => { 
+                        // We need to reload the original HTML structure because we overwrote innerHTML
+                        // Ideally we would just toggle visibility, but this is a quick fix.
+                        // Since session is marked done, it won't show again anyway.
+                         modalBody.innerHTML = originalContent;
+                    }, 500); 
+                }, 2000);
+
+            } catch (e) {
+                console.error('Survey error:', e);
+                // Restore logic is tricky here because we overwrote innerHTML.
+                // Better reload page or simple alert
+                alert('Gagal mengirim survey. Coba lagi.');
+                closeSurvey();
+            }
+        }
+
+        window.addEventListener('load', initSurveyTriggers);
     </script>
 </body>
 </html>

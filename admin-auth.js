@@ -104,7 +104,23 @@ async function login(username, password) {
   // 2. Simulasi Delay Network (untuk mencegah timing attack)
   await new Promise(r => setTimeout(r, 800));
 
-  // 3. Validasi Credential
+  // --- FIREBASE AUTH INTEGRATION ---
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+      try {
+          // Gunakan format email standar untuk admin
+          // User WAJIB membuat akun ini di Firebase Console -> Authentication
+          const email = username.includes('@') ? username : `${username}@dayeuhkolot.bedas`;
+          await firebase.auth().signInWithEmailAndPassword(email, password);
+          console.log('Firebase Auth: Success');
+      } catch (e) {
+          console.warn('Firebase Auth Failed:', e.code, e.message);
+          // Kita tidak throw error di sini agar fallback ke local hash tetap jalan
+          // (Berguna jika internet mati atau user belum setup Auth di console)
+      }
+  }
+  // ---------------------------------
+
+  // 3. Validasi Credential (LOKAL)
   const passHash = await hashString(password);
   
   // Ambil password tersimpan atau default
@@ -140,9 +156,29 @@ async function login(username, password) {
 
 async function changePassword(newPassword) {
     if(!newPassword || newPassword.length < 6) throw new Error('Password minimal 6 karakter');
+    
+    // 1. Update Firebase Auth Password
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        const user = firebase.auth().currentUser;
+        if (user) {
+            try {
+                await user.updatePassword(newPassword);
+                console.log('Firebase Password Updated');
+            } catch (e) {
+                // Jika error "Requires Recent Login", minta user login ulang
+                if (e.code === 'auth/requires-recent-login') {
+                    throw new Error('Demi keamanan, silakan Logout dan Login ulang sebelum mengganti password.');
+                }
+                throw new Error('Gagal update password Cloud: ' + e.message);
+            }
+        }
+    }
+
+    // 2. Update Local Fallback Password
     const newHash = await hashString(newPassword);
     localStorage.setItem(DB_KEYS.PASSWORD, newHash);
-    logActivity('CHANGE_PASSWORD', 'Password admin diubah permanen');
+    
+    logActivity('CHANGE_PASSWORD', 'Password admin diubah');
     return true;
 }
 
@@ -150,6 +186,11 @@ function logout() {
   logActivity('LOGOUT', 'User logout');
   sessionStorage.removeItem(DB_KEYS.SESSION);
   localStorage.removeItem(DB_KEYS.LAST_ACTIVE);
+  
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+      firebase.auth().signOut().catch(e => console.error('SignOut Error:', e));
+  }
+
   window.location.href = 'login.html';
 }
 
@@ -212,6 +253,13 @@ window.AdminAuth = {
   getAuditLogs: async () => { 
       if(window.BedasDB) return await window.BedasDB.getLogs(); 
       return JSON.parse(localStorage.getItem(DB_KEYS.AUDIT) || '[]'); 
+  },
+  clearAuditLogs: async () => {
+      if(window.BedasDB) {
+          await window.BedasDB.clearLogs();
+      } else {
+          localStorage.removeItem(DB_KEYS.AUDIT);
+      }
   },
   getSession,
   getCurrentUser,

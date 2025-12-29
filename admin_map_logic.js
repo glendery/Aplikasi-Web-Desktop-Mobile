@@ -31,19 +31,49 @@ function initMap() {
     });
 }
 
-function loadData() {
+async function loadData() {
+    try {
+        // 1. Try Firebase
+        if (window.BedasDB) {
+             const places = await window.BedasDB.getPlaces();
+             if (places && places.length > 0) {
+                 placesData = { 
+                     version: "1.0.0", 
+                     last_updated: new Date().toISOString(), 
+                     area: "Kecamatan Dayeuhkolot", 
+                     places: places 
+                 };
+                 renderList();
+                 renderMarkers();
+                 showToast('Data dimuat dari Cloud Database');
+                 return;
+             }
+        }
+    } catch(e) { console.warn('Firebase load error', e); }
+
+    loadDataFallback();
+}
+
+function loadDataFallback() {
     fetch('dayeuhkolot_places.json')
         .then(response => response.json())
-        .then(data => {
+        .then(async data => {
             placesData = data;
             renderList();
             renderMarkers();
-            showToast('Data berhasil dimuat');
+            showToast('Data dimuat dari File Lokal (JSON)');
+            
+            // Auto-migrate if Firebase was empty
+            if (window.BedasDB && placesData.places.length > 0) {
+                if(confirm('Database Cloud kosong. Upload data lokal sekarang?')) {
+                     await window.BedasDB.savePlaces(placesData.places);
+                     showToast('Data lokal berhasil di-upload ke Cloud!');
+                }
+            }
         })
         .catch(error => {
             console.error('Error loading data:', error);
             showToast('Gagal memuat data');
-            // Initialize empty if fail
             placesData = { version: "1.0.0", last_updated: new Date().toISOString(), area: "Kecamatan Dayeuhkolot", places: [] };
         });
 }
@@ -62,8 +92,8 @@ function renderList(filterText = '') {
         li.onclick = () => editPlace(place.id);
         
         li.innerHTML = `
-            <div class="place-name" style="border-left: 4px solid ${place.color || '#3388ff'}; padding-left: 8px;">${place.name}</div>
-            <div class="place-category">${place.category.replace('_', ' ')}</div>
+            <div class="place-name" style="border-left: 4px solid ${place.color || '#3388ff'}; padding-left: 8px;">${Utils.escapeHtml(place.name)}</div>
+            <div class="place-category">${Utils.escapeHtml(place.category).replace('_', ' ')}</div>
         `;
         listEl.appendChild(li);
     });
@@ -224,7 +254,7 @@ function editPlace(id) {
     openEditor();
 }
 
-function savePlace() {
+async function savePlace() {
     const id = document.getElementById('editId').value;
     const isNew = !id;
     
@@ -280,10 +310,22 @@ function savePlace() {
     renderMarkers();
     renderList();
     closeEditor();
-    showToast('Data berhasil disimpan (di memori browser)');
+    
+    // SAVE TO FIREBASE
+    if (window.BedasDB) {
+        try {
+            await window.BedasDB.savePlaces(placesData.places);
+            showToast('Data disimpan ke Cloud & Browser Memory');
+        } catch(e) {
+            console.error(e);
+            showToast('Disimpan di browser, GAGAL ke Cloud.');
+        }
+    } else {
+        showToast('Data berhasil disimpan (di memori browser)');
+    }
 }
 
-function deletePlace() {
+async function deletePlace() {
     const id = document.getElementById('editId').value;
     if (!id) return;
 
@@ -294,7 +336,19 @@ function deletePlace() {
         renderMarkers();
         renderList();
         closeEditor();
-        showToast('Lokasi dihapus');
+        
+        // SAVE TO FIREBASE
+        if (window.BedasDB) {
+            try {
+                await window.BedasDB.savePlaces(placesData.places);
+                showToast('Lokasi dihapus dari Cloud');
+            } catch(e) {
+                console.error(e);
+                showToast('Dihapus dari browser, GAGAL ke Cloud.');
+            }
+        } else {
+            showToast('Lokasi dihapus (Lokal)');
+        }
     }
 }
 

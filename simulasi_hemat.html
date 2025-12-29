@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulasi Hemat Bandwidth</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; }
+        .log { background: #f0f0f0; padding: 10px; height: 150px; overflow-y: auto; font-family: monospace; }
+        .status { font-weight: bold; color: green; }
+        .error { color: red; font-weight: bold; }
+        .card { border: 1px solid #ddd; padding: 10px; margin: 5px 0; display: flex; align-items: center; }
+        .card img { width: 32px; height: 32px; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🛠️ Simulasi & Verifikasi Perbaikan</h1>
+    <p>Halaman ini mensimulasikan kondisi "Realtime Update" dari database untuk membuktikan bahwa halaman <b>tidak lagi melakukan render ulang (refresh gambar)</b> jika data tidak berubah.</p>
+
+    <div class="box">
+        <h3>1. Status Simulasi</h3>
+        <p>Jumlah Data Masuk (Pura-pura dari DB): <span id="dataCount">0</span></p>
+        <p>Jumlah Render ke DOM (Perubahan Tampilan): <span id="renderCount" style="color:blue;font-size:1.2em">0</span></p>
+        <p id="verdict" class="status">Menunggu hasil...</p>
+        <button onclick="startSimulation()">Mulai Simulasi (Kirim 50 Data Identik)</button>
+    </div>
+
+    <div class="box">
+        <h3>2. Area Render (Target Simulasi)</h3>
+        <div id="featuredContainer"></div>
+    </div>
+
+    <div class="box">
+        <h3>3. Log Aktivitas</h3>
+        <div id="console" class="log"></div>
+    </div>
+
+    <script>
+        // --- LOGIC DARI INDEX.HTML (YANG SUDAH DIPERBAIKI) ---
+        let lastFeatured = '';
+        let renderCount = 0;
+        let dataCount = 0;
+        const container = document.getElementById('featuredContainer');
+        const logEl = document.getElementById('console');
+
+        function log(msg) {
+            const div = document.createElement('div');
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // Fungsi Render dengan Diffing (Sama seperti di index.html)
+        function render(services) {
+            dataCount++;
+            document.getElementById('dataCount').textContent = dataCount;
+
+            // --- INI LOGIKA PENGHEMATANNYA ---
+            const currentStr = JSON.stringify(services);
+            if (currentStr === lastFeatured) {
+                log("♻️ Data sama terdeteksi -> Render dibatalkan (Hemat Bandwidth)");
+                return; // STOP DI SINI
+            }
+            lastFeatured = currentStr;
+            // ----------------------------------
+
+            renderCount++;
+            document.getElementById('renderCount').textContent = renderCount;
+            log("🎨 Melakukan Render Ulang DOM (Akan download gambar jika URL beda)");
+
+            container.innerHTML = services.map(s => {
+                return `
+                <div class="card">
+                    <span>${s.icon}</span>
+                    <div>
+                        <strong>${s.title}</strong>
+                        <p>${s.desc}</p>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // --- SIMULASI ---
+        function startSimulation() {
+            renderCount = 0;
+            dataCount = 0;
+            lastFeatured = ''; // Reset
+            document.getElementById('renderCount').textContent = '0';
+            document.getElementById('dataCount').textContent = '0';
+            container.innerHTML = '';
+            log("🚀 Memulai simulasi...");
+
+            const mockData = [
+                { id: '1', icon: '🤖', title: 'Asisten Virtual', desc: 'Layanan tanya jawab otomatis.' },
+                { id: '2', icon: '📄', title: 'Database Layanan', desc: 'Informasi KTP, KK, dll.' }
+            ];
+
+            let i = 0;
+            const interval = setInterval(() => {
+                i++;
+                // Kirim data yang SAMA PERSIS setiap kali
+                render(mockData); 
+
+                if (i >= 50) {
+                    clearInterval(interval);
+                    analyzeResult();
+                }
+            }, 50); // Cepat, 50ms per update
+        }
+
+        function analyzeResult() {
+            const r = parseInt(document.getElementById('renderCount').textContent);
+            const d = parseInt(document.getElementById('dataCount').textContent);
+            const verdict = document.getElementById('verdict');
+
+            if (r === 1 && d === 50) {
+                verdict.textContent = "✅ SUKSES: 50 Data Masuk, hanya 1 Render. (HEMAT 98%)";
+                verdict.className = "status";
+                log("✅ VERIFIKASI BERHASIL: Sistem Diffing bekerja.");
+            } else {
+                verdict.textContent = `❌ GAGAL: ${d} Data Masuk, ${r} Render. (BOROS)`;
+                verdict.className = "error";
+                log("❌ VERIFIKASI GAGAL: Masih terjadi re-render.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -12,13 +12,16 @@
     </style>
     <!-- Firebase SDK (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script src="firebase-config.js"></script>
     <script src="data-services.js"></script>
     <script src="db-service.js"></script>
     <style>
-    body{background: var(--gradient-soft);}
+    body{background: var(--gradient-soft); display:none;}
+    body.auth-success{display:block;}
     .admin-container{max-width:1200px;margin:32px auto;padding:22px;background:linear-gradient(180deg,#ffffff,rgba(250,250,250,0.95));border-radius:16px;box-shadow:0 16px 40px rgba(14,30,37,0.12);border:1px solid rgba(8,37,47,0.06)}
     .admin-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid rgba(0,0,0,0.08)}
     .admin-title{display:flex;align-items:center;gap:12px}
@@ -219,6 +222,7 @@
       <button class="tab-btn" id="btn-tab-gallery">Manajemen Galeri Camat</button>
       <button class="tab-btn" id="btn-tab-komitmen">Komitmen Pelayanan</button>
       <button class="tab-btn" id="btn-tab-social">Ikuti Kami</button>
+      <button class="tab-btn" id="btn-tab-session">Session & Log</button>
     </div>
 
     <script>
@@ -238,7 +242,8 @@
         'map-admin': 'btn-tab-map-admin',
         'gallery': 'btn-tab-gallery',
         'komitmen': 'btn-tab-komitmen',
-        'social': 'btn-tab-social'
+        'social': 'btn-tab-social',
+        'session': 'btn-tab-session'
       };
       if(btnMap[tabId]) {
         const btn = document.getElementById(btnMap[tabId]);
@@ -252,6 +257,7 @@
       if(tabId === 'popular' && window.renderPopular) window.renderPopular();
       if(tabId === 'komitmen' && window.renderKomitmen) window.renderKomitmen();
       if(tabId === 'social' && window.renderSocial) window.renderSocial();
+      if(tabId === 'session' && window.renderAudit) window.renderAudit();
     };
 
     // Attach event listeners after DOM load
@@ -264,11 +270,24 @@
       document.getElementById('btn-tab-gallery').onclick = () => switchTab('gallery');
       document.getElementById('btn-tab-komitmen').onclick = () => switchTab('komitmen');
       document.getElementById('btn-tab-social').onclick = () => switchTab('social');
+      document.getElementById('btn-tab-session').onclick = () => switchTab('session');
       
       // Check query param for initial tab
       const urlParams = new URLSearchParams(window.location.search);
       const goto = urlParams.get('goto');
       if(goto) switchTab(goto);
+
+      // Real-time Aggregates Listener (Hemat Bandwidth)
+      if(window.BedasDB && window.BedasDB.subscribeAggregates) {
+          window.BedasDB.subscribeAggregates((counts) => {
+             // Only update if surveys tab is active or just update silently?
+             // Updating DOM is cheap compared to network.
+             // We can check if renderSurveyStats is defined (it is)
+             if (typeof renderSurveyStats === 'function') {
+                 renderSurveyStats(counts);
+             }
+          });
+      }
     });
     </script>
 
@@ -279,11 +298,62 @@
         <input id="fltText" placeholder="Cari data..." style="flex:1">
         <button class="option-btn" id="refreshBtn">Refresh</button>
         <button class="option-btn" id="clearDataBtn">Hapus Semua</button>
+        <button class="option-btn" onclick="restoreAllDefaults()" style="background:#d32f2f; color:white; margin-left:auto;">🚑 PEMULIHAN DATA DARURAT</button>
       </div>
       <div class="section-title">Grafik Perkembangan Entri</div>
       <canvas id="statsChart" width="800" height="160" style="max-width:100%; margin-bottom:12px;"></canvas>
+      
+      <!-- SURVEY STATS SECTION -->
+      <div class="section-title">Indeks Kepuasan Masyarakat</div>
+      <div style="display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap;">
+        <!-- Chart Donut -->
+        <div style="flex:0 0 250px; background:#fff; padding:12px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); display:flex; flex-direction:column; align-items:center;">
+             <div style="position: relative; height: 180px; width: 180px;">
+                 <canvas id="surveyChart"></canvas>
+             </div>
+             <div style="margin-top:8px; font-weight:600; font-size:14px;">Total Responden: <span id="surveyTotal">0</span></div>
+             <button onclick="resetSurveyData()" style="margin-top:12px; font-size:11px; background:#ffebee; color:#c62828; border:1px solid #ffcdd2; padding:4px 8px; border-radius:4px; cursor:pointer;">Reset Data Survey</button>
+        </div>
+        <!-- Detail Breakdown -->
+        <div style="flex:1; background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.1); min-width:300px;">
+             <div style="font-weight:600; margin-bottom:12px;">Detail Kepuasan</div>
+             <div style="display:flex; flex-direction:column; gap:12px;">
+                 <div style="display:flex; align-items:center;">
+                     <div style="font-size:24px; width:40px;">🤩</div>
+                     <div style="flex:1;">
+                         <div style="font-size:13px; font-weight:600;">Sangat Puas</div>
+                         <div style="background:#eee; height:8px; border-radius:4px; overflow:hidden; margin-top:4px;">
+                             <div id="barPuas" style="width:0%; background:#4CAF50; height:100%;"></div>
+                         </div>
+                     </div>
+                     <div id="countPuas" style="width:50px; text-align:right; font-weight:700;">0</div>
+                 </div>
+                 <div style="display:flex; align-items:center;">
+                     <div style="font-size:24px; width:40px;">😐</div>
+                     <div style="flex:1;">
+                         <div style="font-size:13px; font-weight:600;">Cukup</div>
+                         <div style="background:#eee; height:8px; border-radius:4px; overflow:hidden; margin-top:4px;">
+                             <div id="barCukup" style="width:0%; background:#FFC107; height:100%;"></div>
+                         </div>
+                     </div>
+                     <div id="countCukup" style="width:50px; text-align:right; font-weight:700;">0</div>
+                 </div>
+                 <div style="display:flex; align-items:center;">
+                     <div style="font-size:24px; width:40px;">😞</div>
+                     <div style="flex:1;">
+                         <div style="font-size:13px; font-weight:600;">Kurang</div>
+                         <div style="background:#eee; height:8px; border-radius:4px; overflow:hidden; margin-top:4px;">
+                             <div id="barKurang" style="width:0%; background:#F44336; height:100%;"></div>
+                         </div>
+                     </div>
+                     <div id="countKurang" style="width:50px; text-align:right; font-weight:700;">0</div>
+                 </div>
+             </div>
+        </div>
+      </div>
+
       <div class="table" id="table">
-        <div class="table-header"><div>Waktu</div><div>Nama</div><div>Layanan</div><div>HP</div><div>Pesan</div><div>Aksi</div></div>
+        <div class="table-header"><div>Waktu</div><div>Nama</div><div>Layanan</div><div>HP</div><div>Pesan</div><div>Survey</div><div>Aksi</div></div>
         <div id="rows"></div>
       </div>
     </div>
@@ -703,13 +773,52 @@
       <div class="audit-row audit-header"><div>Waktu</div><div>User</div><div>Aktivitas</div><div>IP</div></div>
       <div id="auditRows"></div>
     </div>
+
+    <!-- Troubleshooting Section -->
+    <div style="margin-top: 40px; padding: 20px; background: #fff3e0; border-radius: 12px; border: 1px solid #ffe0b2;">
+        <div style="font-weight: 700; color: #e65100; margin-bottom: 10px;">🔧 Perbaikan Data & Sinkronisasi</div>
+        <p style="font-size: 13px; color: #555; margin-bottom: 15px;">
+            Jika data di Firebase kosong tetapi di komputer ini ada (atau sebaliknya), gunakan tombol di bawah.
+            Pastikan Anda membuka menu <b>"Realtime Database"</b> di Firebase Console, bukan Firestore.
+        </p>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="forceUploadLocalToCloud()" style="background: #fb8c00; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                ☁️ Upload Data Lokal ke Firebase
+            </button>
+            <button onclick="resetSurveyData()" style="background: #e53935; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                🗑️ Reset Data Survey Harian
+            </button>
+        </div>
+    </div>
   </div>
 
   <script src="data-services.js"></script>
   <script src="admin-auth.js"></script>
   <script>
-    // 1. Security Check
+    // 1. Security & Utils
+    const Utils = {
+        escapeHtml: (unsafe) => {
+            if (typeof unsafe !== 'string') return unsafe;
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    };
+
     window.AdminAuth.requireAuth();
+     document.body.classList.add('auth-success');
+    
+    // Handler Hapus Log
+    window.handleClearLogs = async function() {
+        if(confirm('Hapus SEMUA log aktivitas (Database Cloud & Lokal)?')) { 
+            await window.AdminAuth.clearAuditLogs(); 
+            renderAudit();
+            alert('Log aktivitas berhasil dibersihkan.');
+        }
+    };
 
     // 2. Logic Dashboard
     document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -719,7 +828,11 @@
     async function renderSubmissions() {
       const rowsEl = document.getElementById('rows');
       let data = [];
-      try { data = await window.BedasDB.getSubmissions(); } catch(e){ console.error(e); }
+      let surveys = [];
+      try { 
+          data = await window.BedasDB.getSubmissions(); 
+          surveys = await window.BedasDB.getSurveys();
+      } catch(e){ console.error(e); }
       
       // Sort by TS descending
       data.sort((a,b) => new Date(b.ts) - new Date(a.ts));
@@ -732,21 +845,170 @@
 
       document.getElementById('statTotal').textContent = data.length;
       await renderStats();
+      await renderSurveyStats(); // Use aggregates, independent of active surveys
 
-      rowsEl.innerHTML = filtered.map(item => `
+      rowsEl.innerHTML = filtered.map(item => {
+        const survey = surveys.find(s => s.submission_id === item.id);
+        let surveyBadge = '<span style="color:#aaa;font-size:12px;">-</span>';
+        let feedbackHtml = '';
+
+        if(survey) {
+            if(survey.rating === 'puas') surveyBadge = '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:4px;font-size:11px;">🤩 Puas</span>';
+            else if(survey.rating === 'cukup') surveyBadge = '<span style="background:#fff8e1;color:#f57f17;padding:2px 6px;border-radius:4px;font-size:11px;">😐 Cukup</span>';
+            else if(survey.rating === 'tidak_puas') surveyBadge = '<span style="background:#ffebee;color:#c62828;padding:2px 6px;border-radius:4px;font-size:11px;">😞 Kurang</span>';
+
+            if(survey.feedback) {
+                feedbackHtml = `<div style="font-size:10px;color:#666;margin-top:4px;line-height:1.2;font-style:italic;">"${Utils.escapeHtml(survey.feedback)}"</div>`;
+            }
+        }
+
+        return `
         <div class="table-row">
           <div>${new Date(item.ts).toLocaleString()}</div>
-          <div>${item.nama || '-'}</div>
-          <div>${item.layanan || '-'}</div>
-          <div>${item.hp || '-'}</div>
-          <div>${item.pesan || '-'}</div>
+          <div>${Utils.escapeHtml(item.nama || '-')}</div>
+          <div>${Utils.escapeHtml(item.layanan || '-')}</div>
+          <div>${Utils.escapeHtml(item.hp || '-')}</div>
+          <div>${Utils.escapeHtml(item.pesan || '-')}</div>
+          <div>
+            ${surveyBadge}
+            ${feedbackHtml}
+          </div>
           <div style="display:flex;gap:4px;">
             <button onclick="editItem('${item.id}')" style="color:var(--toska-main);border:none;background:none;cursor:pointer;font-weight:600">Edit</button>
             <button onclick="deleteItem('${item.id}')" style="color:red;border:none;background:none;cursor:pointer;font-weight:600">Hapus</button>
           </div>
         </div>
-      `).join('') || '<div style="padding:20px;text-align:center">Tidak ada data</div>';
+      `}).join('') || '<div style="padding:20px;text-align:center">Tidak ada data</div>';
     }
+
+    async function renderSurveyStats(surveys) {
+        // SELALU gunakan Data Statistik Permanen (bedas_survey_stats)
+        // Agar reset data harian tidak menghapus grafik total.
+        try { 
+            surveys = await window.BedasDB.getSurveyStats(); 
+        } catch(e){ 
+            console.error('Failed to load survey stats', e);
+            surveys = [];
+        }
+        
+        console.log('Survey Stats Data:', surveys); // DEBUG
+
+        const total = surveys.length;
+        document.getElementById('surveyTotal').textContent = total;
+        
+        const counts = { puas:0, cukup:0, kurang:0 };
+        surveys.forEach(s => {
+            const r = (s.rating || '').toLowerCase().trim();
+            if(r === 'puas' || r.includes('puas') && !r.includes('tidak')) counts.puas++;
+            else if(r === 'cukup') counts.cukup++;
+            else if(r === 'tidak_puas' || r === 'kurang' || r.includes('tidak')) counts.kurang++;
+        });
+
+        // Update Text Counts
+        document.getElementById('countPuas').textContent = counts.puas;
+        document.getElementById('countCukup').textContent = counts.cukup;
+        document.getElementById('countKurang').textContent = counts.kurang;
+
+        // Update Bars
+        document.getElementById('barPuas').style.width = total ? (counts.puas/total*100)+'%' : '0%';
+        document.getElementById('barCukup').style.width = total ? (counts.cukup/total*100)+'%' : '0%';
+        document.getElementById('barKurang').style.width = total ? (counts.kurang/total*100)+'%' : '0%';
+
+        // Render Donut Chart
+        const ctx = document.getElementById('surveyChart').getContext('2d');
+        if(window.surveyChartInstance) window.surveyChartInstance.destroy();
+        
+        window.surveyChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Puas', 'Cukup', 'Kurang'],
+                datasets: [{
+                    data: [counts.puas, counts.cukup, counts.kurang],
+                    backgroundColor: ['#4CAF50', '#FFC107', '#F44336'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // --- RESET SURVEY UTILITY ---
+     window.resetSurveyData = async function() {
+         if(!confirm('Reset Data Survey HARIAN/AKTIF?\n\nNOTE: Grafik & Total tidak akan berubah (Statistik Permanen).')) return;
+         try {
+             // Safety Check: Ensure 'surveys' key exists to prevent Root Wipe
+             if (!window.BedasDB.collectionNames.surveys) {
+                 alert('Mohon Refresh Halaman (Ctrl+F5) terlebih dahulu untuk pembaruan sistem keamanan.');
+                 return;
+             }
+
+             await window.BedasDB.setAll('surveys', []);
+             alert('Data aktif berhasil direset. Statistik tetap aman.');
+             renderSurveyStats();
+         } catch(e) {
+             console.error(e);
+             alert('Gagal reset data.');
+         }
+     };
+
+     // --- EMERGENCY RECOVERY ---
+     window.restoreAllDefaults = async function() {
+        if(!confirm('DARURAT: Ini akan menimpa data Layanan, Galeri, Komitmen, dll dengan data default (bawaan pabrik). Lanjutkan?')) return;
+        
+        try {
+            // 1. Services
+            if (typeof defaultServicesList !== 'undefined') await saveServices(defaultServicesList);
+            
+            // 2. Gallery
+            const galleryDefaults = [
+                { id: '1', position: 'Camat', name: 'Drs. H. Yudi Fadilah, M.Si', desc: 'Camat Dayeuhkolot', tenure: '2022 - Sekarang', order: 0, image: 'images/camat.png' },
+                { id: '2', position: 'Sekretaris Kecamatan', name: 'Nama Sekcam', desc: 'Sekretaris Kecamatan', tenure: '', order: 1, image: 'images/ikon.png' },
+                { id: '3', position: 'Kasi Pemerintahan', name: 'Nama Kasi', desc: 'Kepala Seksi Pemerintahan', tenure: '', order: 2, image: 'images/ikon.png' },
+                { id: '4', position: 'Kasi Pelayanan', name: 'Nama Kasi', desc: 'Kepala Seksi Pelayanan', tenure: '', order: 3, image: 'images/ikon.png' }
+            ];
+            await saveGallery(galleryDefaults);
+
+            // 3. Komitmen
+            const komitmenDefaults = [
+                { id: '1', title: 'Bandung BEDAS', desc: '', image: 'images/slogan3.png', ts: new Date().toISOString() },
+                { id: '2', title: 'Pemerintah Kab. Bandung', desc: '', image: 'images/logo pemkab.png', ts: new Date().toISOString() },
+                { id: '3', title: 'Kecamatan Dayeuhkolot', desc: '', image: 'images/kecamatan.png', ts: new Date().toISOString() },
+                { id: '4', title: 'Bangga Melayani', desc: '', image: 'images/slogan1.png', ts: new Date().toISOString() },
+                { id: '5', title: 'BerAKHLAK', desc: '', image: 'images/slogan.png', ts: new Date().toISOString() }
+            ];
+            await saveKomitmen(komitmenDefaults);
+
+            // 4. Featured & Popular
+            const featuredDefaults = [
+                { id: '1', icon: '🤖', title: 'Asisten Virtual', desc: 'Layanan tanya jawab otomatis 24 jam untuk membantu memahami persyaratan layanan sebelum datang ke kantor.' },
+                { id: '2', icon: '📄', title: 'Database Layanan Lengkap', desc: 'Informasi persyaratan KTP, KK, Akta, Surat Pindah, dan layanan administrasi lainnya.' },
+                { id: '3', icon: '📱', title: 'Terintegrasi WhatsApp', desc: 'Terhubung langsung dengan petugas resmi menggunakan format pesan otomatis.' }
+            ];
+            await window.BedasDB.saveFeatured(featuredDefaults);
+
+            const popularDefaults = [
+                { id: '1', icon: 'images/ikon/ktp.svg', title: 'Pembuatan & Perubahan KTP' },
+                { id: '2', icon: 'images/ikon/kk.svg', title: 'Perubahan Data KK' },
+                { id: '3', icon: 'images/ikon/akta.svg', title: 'Akta Kelahiran' },
+                { id: '4', icon: 'images/ikon/domisili.svg', title: 'Surat Pindah Datang / Keluar' }
+            ];
+            await window.BedasDB.savePopular(popularDefaults);
+
+            alert('Pemulihan Data Default Selesai. Silakan refresh halaman.');
+            location.reload();
+
+        } catch(e) {
+            console.error('Recovery failed:', e);
+            alert('Gagal memulihkan data: ' + e.message);
+        }
+     };
 
     // Modal Logic
     const modal = document.getElementById('dataModal');
@@ -2125,6 +2387,31 @@
       if(typeof renderFeatured === 'function') renderFeatured();
       if(typeof renderPopular === 'function') renderPopular();
     }, 100);
+
+    // --- Manual Sync Functions ---
+    window.forceUploadLocalToCloud = async function() {
+        if(!confirm('Upload data lokal ke Firebase? Pastikan Cloud kosong atau Anda ingin menimpa.')) return;
+        try {
+            await window.BedasDB.migrateLocalToCloud();
+        } catch(e) {
+            alert('Error: ' + e.message);
+        }
+    };
+
+    window.resetSurveyData = async function() {
+        if(!confirm('Hapus data survey harian (reset)?')) return;
+        try {
+            if(window.BedasDB && window.BedasDB.db) {
+                await window.BedasDB.db.ref('bedas_surveys').remove();
+                alert('Survey harian berhasil di-reset.');
+                location.reload();
+            } else {
+                alert('Database belum siap.');
+            }
+        } catch(e) {
+            alert('Gagal reset: ' + e.message);
+        }
+    };
 
     // Change Password Logic
     const changePassModal = document.getElementById('changePasswordModal');

@@ -1,4 +1,4 @@
-const defaultServicesList = [
+window.defaultServicesList = [
     // --- LAYANAN 1-5 ---
     {
         title: "Identitas Kependudukan Digital (IKD)",

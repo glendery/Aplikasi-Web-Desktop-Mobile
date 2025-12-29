@@ -1,25 +1,29 @@
-// KONFIGURASI FIREBASE
-// Diambil dari screenshot user
+// KONFIGURASI FIREBASE - Dayeuhkolot Bedas
+// Diperbarui pada: 2025-12-29
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBmfgEW_po8JqvVmBNS_Nxf5AIKY568Gwk",
-  authDomain: "bedaserve-90c39.firebaseapp.com",
-  projectId: "bedaserve-90c39",
-  storageBucket: "bedaserve-90c39.firebasestorage.app",
-  messagingSenderId: "462010407830",
-  appId: "1:462010407830:web:0caaf98f7eda7d6fe0dbb7",
-  // Database URL (Updated to Singapore Region)
-  databaseURL: "https://bedaserve-90c39-default-rtdb.asia-southeast1.firebasedatabase.app" 
+  apiKey: "AIzaSyAhQzsxEDxKk6RcBHoc1kWnrkvPj6MXH3E",
+  authDomain: "dayeuhkolot-bedas.firebaseapp.com",
+  // Perhatikan: URL Database harus bersih tanpa spasi atau backtick
+  databaseURL: "https://dayeuhkolot-bedas-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "dayeuhkolot-bedas",
+  storageBucket: "dayeuhkolot-bedas.firebasestorage.app",
+  messagingSenderId: "282073106610",
+  appId: "1:282073106610:web:e4f745c09ed058743261ab"
 };
 
-// Initialize Firebase
+// Initialize Firebase (Compat/Global Mode)
 if (typeof firebase !== 'undefined') {
   try {
-      firebase.initializeApp(firebaseConfig);
-      console.log('Firebase initialized successfully');
+      // Mencegah inisialisasi ganda
+      if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+          console.log('Firebase initialized successfully (New Project: dayeuhkolot-bedas)');
+      }
   } catch(e) {
       console.error('Firebase initialization error:', e);
+      alert('Gagal menghubungkan ke database: ' + e.message);
   }
 } else {
-  console.error('Firebase SDK not found!');
+  console.error('Firebase SDK not found! Pastikan script Firebase dimuat di HTML.');
 }
