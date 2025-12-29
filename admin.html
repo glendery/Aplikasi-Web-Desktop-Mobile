@@ -2,6 +2,19 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
+  <script>
+    if (window.trustedTypes && window.trustedTypes.createPolicy && !window.trustedTypes.defaultPolicy) {
+        try {
+            window.trustedTypes.createPolicy('default', {
+                createHTML: string => string,
+                createScript: string => string,
+                createScriptURL: string => string
+            });
+        } catch (e) {
+            console.warn('Trusted Types Policy creation failed:', e);
+        }
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dashboard Admin – BEDAS SERVE</title>
   <meta name="theme-color" content="#058a83">
@@ -223,6 +236,7 @@
       <button class="tab-btn" id="btn-tab-komitmen">Komitmen Pelayanan</button>
       <button class="tab-btn" id="btn-tab-social">Ikuti Kami</button>
       <button class="tab-btn" id="btn-tab-session">Session & Log</button>
+      <button class="tab-btn" id="btn-tab-settings">Pengaturan</button>
     </div>
 
     <script>
@@ -243,7 +257,8 @@
         'gallery': 'btn-tab-gallery',
         'komitmen': 'btn-tab-komitmen',
         'social': 'btn-tab-social',
-        'session': 'btn-tab-session'
+        'session': 'btn-tab-session',
+        'settings': 'btn-tab-settings'
       };
       if(btnMap[tabId]) {
         const btn = document.getElementById(btnMap[tabId]);
@@ -271,6 +286,7 @@
       document.getElementById('btn-tab-komitmen').onclick = () => switchTab('komitmen');
       document.getElementById('btn-tab-social').onclick = () => switchTab('social');
       document.getElementById('btn-tab-session').onclick = () => switchTab('session');
+      document.getElementById('btn-tab-settings').onclick = () => switchTab('settings');
       
       // Check query param for initial tab
       const urlParams = new URLSearchParams(window.location.search);
@@ -559,6 +575,59 @@
       <div style="margin-top:20px;text-align:right">
         <button class="option-btn btn-danger" onclick="if(confirm('Hapus semua log aktivitas?')) { localStorage.removeItem('bedas_audit_log'); renderAudit(); }">Hapus Semua Log</button>
       </div>
+    </div>
+
+    <!-- TAB: SETTINGS -->
+    <div id="tab-settings" class="tab-content">
+      <div class="section-title">Pengaturan Sistem</div>
+      
+      <div class="stat-card" style="text-align:left; max-width:600px; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <strong style="font-size:1.1rem; display:block; margin-bottom:4px;">Reset Penghitung Layanan</strong>
+                <span style="font-size:0.9rem; color:#666;">Setel ulang jumlah "Warga Terlayani" menjadi 0.</span>
+            </div>
+            <button class="option-btn btn-danger" onclick="resetServedCount()">Reset ke 0</button>
+        </div>
+      </div>
+
+      <div class="stat-card" style="text-align:left; max-width:600px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <strong style="font-size:1.1rem; display:block; margin-bottom:4px;">Migrasi/Sinkronisasi Data</strong>
+                <span style="font-size:0.9rem; color:#666;">Paksa sinkronisasi ulang data lokal ke cloud.</span>
+            </div>
+            <button class="option-btn" onclick="forceSync()">Sinkronisasi</button>
+        </div>
+      </div>
+
+      <script>
+        function resetServedCount() {
+            if(!confirm('Apakah Anda yakin ingin mereset jumlah warga terlayani menjadi 0? Tindakan ini akan mengubah data di database.')) return;
+            
+            if(window.BedasDB && window.BedasDB.db) {
+                window.BedasDB.db.ref('bedas_counts/served_total').set(0)
+                .then(() => {
+                    alert('Berhasil! Penghitung telah direset ke 0.');
+                    // Update local cache too
+                    localStorage.setItem('bedas_served_total', 0);
+                    localStorage.setItem('bedas_served_display_last', 0);
+                })
+                .catch(e => {
+                    console.error(e);
+                    alert('Gagal mereset: ' + e.message);
+                });
+            } else {
+                alert('Database belum siap.');
+            }
+        }
+
+        function forceSync() {
+            if(window.BedasDB) {
+                window.BedasDB.migrateLocalToCloud();
+            }
+        }
+      </script>
     </div>
 
     <!-- Social Modal -->
@@ -1152,7 +1221,7 @@
       const totalEl=document.getElementById('statTotalPermanent');
       
       // Base count disamakan dengan halaman depan
-      const BASE_COUNT = 1530;
+      const BASE_COUNT = 0;
       
       if(totalEl) totalEl.textContent = stats.length + BASE_COUNT;
       const canvas=document.getElementById('statsChart');
@@ -1180,9 +1249,12 @@
 
 
 
-    // 4. Services Logic
+    // 4. Services Logic (Enhanced with Offline Support)
     async function getServices() {
-      // Baca dari Single Source of Truth via BedasDB
+      // 1. Memory Cache
+      if (window._offlineServices) return window._offlineServices;
+
+      // 2. Try Cloud
       try { 
           let services = await window.BedasDB.getServices();
           if (services.length > 0) {
@@ -1193,27 +1265,58 @@
                   const warisStored = services.find(s => s.title === warisTitle);
                   
                   if (warisDefault && warisStored) {
-                       // Force update templates and procedure from code
                        warisStored.templates = warisDefault.templates;
                        warisStored.procedure = warisDefault.procedure;
-                       await saveServices(services);
+                       await saveServices(services); // Update cloud & cache
                   }
               }
+              window._offlineServices = services; // Cache it
               return services;
           }
-          
-          // Auto-seed dari data-services.js jika kosong
-          if (typeof defaultServicesList !== 'undefined') {
-              console.log('Seeding default services...');
-              await saveServices(defaultServicesList);
-              return defaultServicesList;
+      } catch(e) { console.warn('Cloud fetch failed, trying local...'); }
+      
+      // 3. Try LocalStorage (Offline Fallback)
+      try {
+          const local = localStorage.getItem('bedas_services_local');
+          if (local) {
+              const parsed = JSON.parse(local);
+              if (parsed.length > 0) {
+                  window._offlineServices = parsed;
+                  return parsed;
+              }
           }
-          return [];
-      } catch(e) { return []; }
+      } catch(e) {}
+
+      // 4. Auto-seed (calls saveServices)
+      if (typeof defaultServicesList !== 'undefined') {
+          console.log('Seeding default services...');
+          await saveServices(defaultServicesList);
+          return defaultServicesList;
+      }
+      return [];
     }
     
     async function saveServices(data) {
-      await window.BedasDB.saveServices(data);
+      // 1. Update Memory
+      window._offlineServices = data;
+      
+      // 2. Update LocalStorage
+      try { localStorage.setItem('bedas_services_local', JSON.stringify(data)); } catch(e){}
+
+      // 3. Try Cloud (Best Effort)
+      try {
+          await window.BedasDB.saveServices(data);
+      } catch(e) {
+          console.warn('Cloud Save Failed (Offline Mode):', e);
+          if (!window._hasWarnedOffline) {
+                const toast = document.createElement('div');
+                toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ffa726;color:white;padding:12px 20px;border-radius:8px;z-index:9999;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.2);animation:slideUp 0.3s ease;';
+                toast.innerHTML = '⚠️ <b>Mode Offline</b><br>Perubahan disimpan secara lokal.';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 4000);
+                window._hasWarnedOffline = true;
+          }
+      }
     }
 
     async function renderServices() {
@@ -1221,16 +1324,25 @@
       let data = [];
       try { data = await getServices(); } catch(e){}
       
-      // Check if empty (likely due to fresh Cloud DB)
+      // Auto-Restore if empty (Fix for "Data Bot Kosong")
       if (data.length === 0 && typeof defaultServicesList !== 'undefined') {
-          rowsEl.innerHTML = `
-             <div style="padding:20px;text-align:center;grid-column:1/-1">
-                <p>Belum ada data layanan (Cloud masih baru).</p>
-                <button onclick="resetServices()" class="btn-primary" style="background:#007bff;color:white;padding:8px 16px;border:none;border-radius:4px;cursor:pointer;">↻ Pulihkan Data Default</button>
-             </div>
-          `;
-          document.getElementById('statServices').textContent = '0';
-          return;
+          console.log('Auto-restoring default services...');
+          try {
+              await saveServices(defaultServicesList);
+              data = defaultServicesList;
+              // Notify user via toast or small log? No need, just show data.
+          } catch(e) {
+              console.warn('Auto-restore cloud failed (Offline Mode):', e);
+              // FALLBACK: Load Default Data Locally so user can see it
+              data = defaultServicesList;
+              
+              // Show notification
+              const toast = document.createElement('div');
+              toast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#ffa726;color:white;padding:12px 20px;border-radius:8px;z-index:9999;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.2);animation:slideUp 0.3s ease;';
+              toast.innerHTML = '⚠️ <b>Mode Offline</b><br>Gagal sync ke Cloud, menggunakan data lokal.';
+              document.body.appendChild(toast);
+              setTimeout(() => toast.remove(), 5000);
+          }
       }
 
       const filter = document.getElementById('fltService').value.toLowerCase();

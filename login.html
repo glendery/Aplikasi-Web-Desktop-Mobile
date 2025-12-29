@@ -2,6 +2,19 @@
 <html lang="id">
 <head>
   <meta charset="utf-8">
+  <script>
+    if (window.trustedTypes && window.trustedTypes.createPolicy && !window.trustedTypes.defaultPolicy) {
+        try {
+            window.trustedTypes.createPolicy('default', {
+                createHTML: string => string,
+                createScript: string => string,
+                createScriptURL: string => string
+            });
+        } catch (e) {
+            console.warn('Trusted Types Policy creation failed:', e);
+        }
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Login Admin – BEDAS SERVE</title>
   <meta name="theme-color" content="#058a83">

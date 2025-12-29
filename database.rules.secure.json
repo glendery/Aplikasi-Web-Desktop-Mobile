@@ -1,57 +1,63 @@
 {
   "rules": {
-    ".read": false,
-    ".write": false,
-    
+    ".read": true,
+    ".write": true,
     "bedas_submissions": {
-      // Hanya Admin (Password) yang boleh BACA data warga
-      ".read": "auth.token.firebase.sign_in_provider === 'password'",
-      // Warga (Anonim) boleh KIRIM data
+      ".read": "auth != null",
       ".write": "auth != null",
-      ".indexOn": ["ts"]
+      ".indexOn": [
+        "ts"
+      ]
     },
-    
     "bedas_surveys": {
-      ".read": "auth.token.firebase.sign_in_provider === 'password'",
+      ".read": "auth != null",
       ".write": "auth != null"
     },
-
     "bedas_survey_stats": {
-      ".read": "auth.token.firebase.sign_in_provider === 'password'",
+      ".read": "auth != null",
       ".write": "auth != null"
     },
-
-    "bedas_audit_log": {
-      ".read": "auth.token.firebase.sign_in_provider === 'password'",
-      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+    "bedas_audit_logs": {
+      ".read": "auth != null",
+      ".write": "auth != null"
     },
-
-    // Data Umum (Boleh dibaca publik, tapi edit butuh Admin)
+    "bedas_places": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "bedas_submissions_stats": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "bedas_komitmen": {
       ".read": true,
-      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+      ".write": "auth != null"
     },
     "bedas_social": {
       ".read": true,
-      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+      ".write": "auth != null"
     },
     "bedas_services_db": {
       ".read": true,
-      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+      ".write": "auth != null"
     },
     "bedas_gallery": {
       ".read": true,
-      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+      ".write": "auth != null"
     },
     "bedas_featured_services": {
       ".read": true,
-      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+      ".write": "auth != null"
     },
     "bedas_popular_services": {
       ".read": true,
-      ".write": "auth.token.firebase.sign_in_provider === 'password'"
+      ".write": "auth != null"
     },
     "bedas_survey_aggregates": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "bedas_counts": {
       ".read": true,
       ".write": "auth != null"
     }

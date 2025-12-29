@@ -1,3 +1,16 @@
+// Utils helper
+const Utils = {
+    escapeHtml: function(text) {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+};
+
 // Global Variables
 let map;
 let placesData = { places: [] };
@@ -33,21 +46,29 @@ function initMap() {
 
 async function loadData() {
     try {
-        // 1. Try Firebase
+        // 1. Try Firebase with Subscription
         if (window.BedasDB) {
-             const places = await window.BedasDB.getPlaces();
-             if (places && places.length > 0) {
-                 placesData = { 
-                     version: "1.0.0", 
-                     last_updated: new Date().toISOString(), 
-                     area: "Kecamatan Dayeuhkolot", 
-                     places: places 
-                 };
-                 renderList();
-                 renderMarkers();
-                 showToast('Data dimuat dari Cloud Database');
-                 return;
-             }
+            console.log('AdminMap: Subscribing to Firebase...');
+            window.BedasDB.subscribe('places', (places) => {
+                console.log('AdminMap: Received update from Firebase:', places ? places.length : 'null');
+                if (places && places.length > 0) {
+                    placesData = { 
+                        version: "1.0.0", 
+                        last_updated: new Date().toISOString(), 
+                        area: "Kecamatan Dayeuhkolot", 
+                        places: places 
+                    };
+                    renderList();
+                    renderMarkers();
+                } else {
+                    // Only fallback if we have NO data yet
+                     if (placesData.places.length === 0) {
+                        console.warn('AdminMap: Firebase empty, triggering fallback...');
+                        loadDataFallback();
+                     }
+                }
+            });
+            return;
         }
     } catch(e) { console.warn('Firebase load error', e); }
 
@@ -55,27 +76,65 @@ async function loadData() {
 }
 
 function loadDataFallback() {
+    console.log('AdminMap: Loading from JSON fallback...');
     fetch('dayeuhkolot_places.json')
         .then(response => response.json())
         .then(async data => {
-            placesData = data;
-            renderList();
-            renderMarkers();
-            showToast('Data dimuat dari File Lokal (JSON)');
-            
-            // Auto-migrate if Firebase was empty
-            if (window.BedasDB && placesData.places.length > 0) {
-                if(confirm('Database Cloud kosong. Upload data lokal sekarang?')) {
-                     await window.BedasDB.savePlaces(placesData.places);
-                     showToast('Data lokal berhasil di-upload ke Cloud!');
+            // Only use fallback if we still have no data from Firebase
+            if (placesData.places.length === 0) {
+                console.log('AdminMap: JSON loaded successfully', data);
+                placesData = data;
+                renderList();
+                renderMarkers();
+                showToast('Data dimuat dari File Lokal (JSON)');
+                
+                // Auto-migrate to Cloud if we are Admin and Cloud is empty
+                if (window.BedasDB && placesData.places.length > 0) {
+                     console.log('AdminMap: Auto-restoring data to Cloud...');
+                     try {
+                        await window.BedasDB.savePlaces(placesData.places);
+                        showToast('Data lokal berhasil dipulihkan ke Cloud!');
+                     } catch(err) {
+                        console.error('Auto-restore failed:', err);
+                     }
                 }
             }
         })
         .catch(error => {
             console.error('Error loading data:', error);
-            showToast('Gagal memuat data');
-            placesData = { version: "1.0.0", last_updated: new Date().toISOString(), area: "Kecamatan Dayeuhkolot", places: [] };
+            if (placesData.places.length === 0) {
+                showToast('Gagal memuat data');
+                placesData = { version: "1.0.0", last_updated: new Date().toISOString(), area: "Kecamatan Dayeuhkolot", places: [] };
+            }
         });
+}
+
+async function resetDataFromJSON() {
+    if(!confirm('Apakah Anda yakin ingin me-reset database peta dengan data default dari file JSON? Data yang ada di Cloud saat ini akan ditimpa.')) return;
+    
+    showToast('Sedang memulihkan data...');
+    try {
+        const response = await fetch('dayeuhkolot_places.json');
+        const data = await response.json();
+        
+        if (data && data.places) {
+            placesData = data;
+            renderList();
+            renderMarkers();
+            
+            if (window.BedasDB) {
+                await window.BedasDB.savePlaces(data.places);
+                showToast('Reset Berhasil: Data dipulihkan ke Cloud!');
+            } else {
+                showToast('Reset Berhasil (Lokal Only)');
+            }
+        } else {
+            alert('File JSON rusak atau kosong.');
+        }
+    } catch (e) {
+        console.error('Reset failed:', e);
+        alert('Gagal melakukan reset data: ' + e.message);
+    }
 }
 
 // --- Render Logic ---

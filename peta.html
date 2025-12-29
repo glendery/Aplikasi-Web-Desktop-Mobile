@@ -3,6 +3,19 @@
 <head>
     <title>Peta Lokasi Kecamatan Dayeuhkolot</title>
     <meta charset="utf-8" />
+    <script>
+        if (window.trustedTypes && window.trustedTypes.createPolicy && !window.trustedTypes.defaultPolicy) {
+            try {
+                window.trustedTypes.createPolicy('default', {
+                    createHTML: string => string,
+                    createScript: string => string,
+                    createScriptURL: string => string
+                });
+            } catch (e) {
+                console.warn('Trusted Types Policy creation failed:', e);
+            }
+        }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="images/Dayeuklt.jpg">
     

@@ -33,13 +33,11 @@ class BedasDBService {
     if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
       this.db = firebase.database();
       
-      // AUTO ANONYMOUS AUTH (Only for Public Pages)
-      const isAdminPage = window.location.pathname.includes('admin.html') || window.location.pathname.includes('login.html');
-      
-      if (firebase.auth && !isAdminPage) {
+      // AUTO ANONYMOUS AUTH (Global - termasuk Admin untuk akses database)
+      if (firebase.auth) {
         try {
           await firebase.auth().signInAnonymously();
-          console.log('BedasDB: Anonymous Auth Success (Warga Mode)');
+          console.log('BedasDB: Anonymous Auth Success (Global Mode)');
         } catch(e) {
           console.error('Anonymous Auth Failed:', e);
         }
@@ -47,10 +45,34 @@ class BedasDBService {
 
       console.log('BedasDB: Firebase Connected');
       this.initialized = true;
-      // Coba migrasi data lokal ke cloud jika cloud kosong
-      this.checkAndMigrate();
-      // Cek counter
-      this.checkAndMigrateCounts();
+
+      // Tunggu Auth sebelum menjalankan migrasi/cek data
+      if (firebase.auth) {
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+              console.log('BedasDB: User authenticated, checking data...');
+              // Coba migrasi data lokal ke cloud jika cloud kosong
+              this.checkAndMigrate();
+              this.checkAndMigratePlaces();
+              // Cek counter
+              if (typeof this.checkAndMigrateCounts === 'function') {
+                this.checkAndMigrateCounts();
+              }
+          } else {
+              console.log('BedasDB: Waiting for auth...');
+              // If not admin page, maybe we are anonymous, so we might want to try anyway?
+              // But anonymous login is handled above. 
+              // If anonymous login succeeded, onAuthStateChanged will fire with user.
+              // So this block is safe.
+          }
+        });
+      } else {
+          // If Auth not available, run checks immediately (Public Mode without Auth Rules)
+          console.warn('BedasDB: Firebase Auth not loaded. Running in public/unauthenticated mode.');
+          this.checkAndMigrate();
+          this.checkAndMigratePlaces();
+      }
+
     } else {
       console.error('BedasDB: Firebase SDK not found or config missing!');
       alert('Koneksi Database Gagal. Pastikan file firebase-config.js sudah diisi dengan benar.');
@@ -69,6 +91,26 @@ class BedasDBService {
     } catch (e) {
       console.error('Migration Check Failed:', e);
     }
+  }
+
+  async checkAndMigratePlaces() {
+    try {
+      const placesRef = this.db.ref(this.collectionNames.places);
+      const snapshot = await placesRef.once('value');
+      if (!snapshot.exists()) {
+          console.log('BedasDB: Places kosong, mencoba restore dari JSON default...');
+          try {
+              const res = await fetch('dayeuhkolot_places.json');
+              if (res.ok) {
+                  const data = await res.json();
+                  if (data && data.places && data.places.length > 0) {
+                      await placesRef.set(data.places);
+                      console.log('BedasDB: Default Places restored.');
+                  }
+              }
+          } catch(e) { console.warn('Gagal load default places json', e); }
+      }
+    } catch (e) { console.error('Places check failed', e); }
   }
 
   async migrateLocalToCloud() {

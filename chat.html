@@ -2,6 +2,19 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
+    <script>
+        if (window.trustedTypes && window.trustedTypes.createPolicy && !window.trustedTypes.defaultPolicy) {
+            try {
+                window.trustedTypes.createPolicy('default', {
+                    createHTML: string => string,
+                    createScript: string => string,
+                    createScriptURL: string => string
+                });
+            } catch (e) {
+                console.warn('Trusted Types Policy creation failed:', e);
+            }
+        }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Dayeuhkolot Bedas Serve – Layanan Mandiri</title>
     <meta name="theme-color" content="#058a83">
@@ -1428,30 +1441,60 @@
             try {
                 // Real-time subscription for Services
                 BedasDB.subscribe('services', async (data) => {
-                    // 1. Handle Empty/First Run -> Seed from Default
-                    if ((!data || data.length === 0) && typeof defaultServicesList !== 'undefined') {
-                        console.log('Chat: Seeding default services...');
-                        data = [...defaultServicesList];
+                    // 1. Handle Empty/First Run -> Seed from Default or LocalStorage
+                    if (!data || data.length === 0) {
+                        console.log('Chat: Cloud empty, checking backups...');
                         
-                        // Migrate legacy if exists
+                        // A. Try LocalStorage first (Offline Cache)
                         try {
-                            const legacy = JSON.parse(localStorage.getItem('bedas_extra_services') || '[]');
-                            if (legacy.length > 0) {
-                                data = [...data, ...legacy];
-                                localStorage.removeItem('bedas_extra_services');
+                            const local = localStorage.getItem('bedas_services_local');
+                            if (local) {
+                                const parsed = JSON.parse(local);
+                                if (parsed.length > 0) {
+                                    data = parsed;
+                                    console.log('Chat: Loaded from LocalStorage.');
+                                }
                             }
                         } catch(e){}
                         
-                        // Save to BedasDB (triggers update loop)
-                        await BedasDB.saveServices(data);
-                        return; // Exit, wait for next update from DB
+                        // B. If still empty, use Default
+                        if ((!data || data.length === 0) && typeof defaultServicesList !== 'undefined') {
+                             console.log('Chat: Using default services...');
+                             data = [...defaultServicesList];
+                             
+                             // Migrate legacy
+                             try {
+                                const legacy = JSON.parse(localStorage.getItem('bedas_extra_services') || '[]');
+                                if (legacy.length > 0) {
+                                    data = [...data, ...legacy];
+                                    localStorage.removeItem('bedas_extra_services');
+                                }
+                             } catch(e){}
+                        }
+                        
+                        // C. Try to Save to Cloud (Best Effort - might fail if anonymous)
+                        if (data && data.length > 0) {
+                            try {
+                                await BedasDB.saveServices(data);
+                                // If successful, it will trigger this subscription again with data
+                                return; 
+                            } catch(e) {
+                                console.warn('Chat: Auto-seed failed (likely permission), using local data.', e);
+                                // Fallthrough to use 'data' locally
+                            }
+                        }
                     }
                     
-                    // 3. Update Global State
-                    services = data;
-                    updateServiceCountDisplay();
-                    refreshSuggestions();
-                    console.log('Chat: Services synced (Realtime). Total:', services.length);
+                    // 2. Update Global State
+                    if (data && data.length > 0) {
+                        services = data;
+                        // Cache locally for next time
+                        try { localStorage.setItem('bedas_services_local', JSON.stringify(services)); } catch(e){}
+                        
+                        updateServiceCountDisplay();
+                        refreshSuggestions();
+                        console.log('Chat: Services synced. Total:', services.length);
+                    }
                 });
                 
             } catch(e) {
